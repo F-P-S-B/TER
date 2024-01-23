@@ -9,6 +9,7 @@ Inductive type :=
 | Type_Fun (e1 e2 : type) : type
 .
 
+Hint Constructors type : local_hints.
 
 
 Inductive expr := 
@@ -20,6 +21,7 @@ Inductive expr :=
 | E_If (e1 e2 e3 : expr)  
 | E_Let (x : string) (e1 e2 : expr)
 .
+Hint Constructors expr : local_hints.
 
 Inductive value : expr -> Prop :=
   | V_True : value E_True
@@ -31,6 +33,7 @@ Inductive value : expr -> Prop :=
             (e : expr), 
         value (E_Fun x t e)
   .
+Hint Constructors value : local_hints.
 
 Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
     | S_Var_Eq :
@@ -86,7 +89,9 @@ Proof with eauto.
     eauto with local_hints.
 Qed.
 
+Hint Resolve exists_subst : local_hints.
 
+Print HintDb local_hints.
 
 Inductive step : expr -> expr -> Prop := 
 | ST_App_Fun : 
@@ -124,6 +129,7 @@ Inductive step : expr -> expr -> Prop :=
     step (E_Let x v1 e2) e2'
 .
 
+Hint Constructors step : local_hints.
 
 
 Definition context := Maps.partial_map type.
@@ -157,6 +163,7 @@ Inductive has_type : context -> expr -> type -> Prop :=
             has_type (x |-> t1; Γ) e2 t2 -> 
             has_type Γ (E_Let x e1 e2) t2
 .
+Hint Constructors has_type : local_hints.
 
 
 Lemma weakening : ∀ Γ Γ' e t, 
@@ -180,6 +187,7 @@ Proof.
       assumption.
 Qed.
 
+Hint Resolve weakening : local_hints.
 
 
 Lemma weakening_empty : ∀ Γ e t, 
@@ -190,6 +198,7 @@ intros. apply (weakening empty); auto.
 intros x v contra. discriminate contra.
 Qed.
 
+Hint Resolve weakening_empty : local_hints.
 
 Definition closed (e : expr) :=
   ∀ t, (∃ Γ, has_type Γ e t) -> ∀ Γ, has_type Γ e t.  (* Proposition de définition de clos *) 
@@ -204,15 +213,14 @@ Proof.
     generalize dependent t_e.
     generalize dependent t_s.
     generalize dependent Γ.
-    induction H_subst; intros.
+    induction H_subst; intros;
+    try (inversion H_type_e; subst; eauto with local_hints; fail).
     - inversion H_type_e; subst. 
       rewrite Maps.update_eq in H1. inversion H1; subst.
       apply weakening_empty.
       assumption.
     - inversion H_type_e; subst. 
       apply T_Var. rewrite update_neq in H2; auto.
-    - inversion H_type_e; subst. 
-      eapply T_App; eauto.
     - inversion H_type_e; subst.
       apply T_Fun.   
       rewrite Maps.update_shadow in H4. assumption.    
@@ -220,17 +228,15 @@ Proof.
       apply T_Fun.
       rewrite Maps.update_permute in H5; auto.
       eapply IHH_subst; eauto.
-    - inversion H_type_e; apply T_True.
-    - inversion H_type_e; apply T_False.
-    - inversion H_type_e; subst. apply T_If. eauto.
-      + eapply IHH_subst2; eauto.
-      + eapply IHH_subst3; eauto.
     - inversion H_type_e; subst. eapply T_Let; eauto.
       rewrite Maps.update_shadow in H5. auto.
     - inversion H_type_e; subst. eapply T_Let; eauto.
       rewrite Maps.update_permute in H6; auto.
       eapply IHH_subst2; eauto.
 Qed.     
+
+Hint Resolve subst_typing : local_hints.
+
 
 Lemma canonical_form_bool : ∀ e,
     has_type empty e Type_Bool -> 
@@ -242,6 +248,7 @@ Proof.
     inversion H_type.
 Qed.
 
+Hint Resolve canonical_form_bool : local_hints.
 
 Lemma canonical_form_fun : ∀ e t1 t2,
     has_type empty e (Type_Fun t1 t2) -> 
@@ -254,56 +261,37 @@ Proof.
     eauto.
 Qed.
 
+Hint Resolve canonical_form_fun : local_hints.
+
 
 Theorem progress : ∀ e t,
     has_type empty e t -> 
     value e \/ ∃ e', step e e'.
-Proof.
+Proof with eauto with local_hints.
     intros * H_type.
     generalize dependent t.
-    induction e; intros.
-    - inversion H_type; subst. inversion H1.
-    - right.
-      inversion H_type; subst. 
-      destruct (IHe1 (Type_Fun t1 t)) as [H_val_e1 | [e1' H_step_e1] ]; auto.
-      + destruct (IHe2 t1) as [H_val_e2 | [e2' H_step_e2] ]; auto.
-        * assert (H := canonical_form_fun e1 t1 t H4 H_val_e1).
-          destruct H as [x [e' H_eq]]. subst.
-          apply IHe1 in H4.
-          destruct H4 as [H_val | H_ex].
-          -- assert (H:= exists_subst e2 x e'). 
-             destruct H as [e'0 H_sub].
-             exists e'0.
-             apply ST_App_Fun; auto. 
-          -- destruct H_ex as [e'0 H_ex].
-             exists (E_App e'0 e2). 
-             apply ST_App_Left. assumption.
-        * exists (E_App e1 e2'). apply ST_App_Right; auto.
-      + exists (E_App e1' e2). apply ST_App_Left; auto.
-    - left. apply V_Fun.
-    - left. apply V_True. 
-    - left. apply V_False.
-    - right.
-      inversion H_type; subst.
-      apply IHe1 in H3 as H_e1_val_step.  
-      apply IHe2 in H5 as H_e2_val_step.  
-      apply IHe3 in H6 as H_e3_val_step.
-      destruct H_e1_val_step as [H_val_e1 | [e' H_step]].
-      + apply canonical_form_bool in H_val_e1; auto.
-        destruct H_val_e1 as [H_e1_eq | H_e1_eq]; subst.
-        * exists e2. apply ST_If_True.
-        * exists e3. apply ST_If_False.
-      + exists (E_If e' e2 e3). apply ST_If. assumption.
-    - right. 
-      inversion H_type; subst.
-      destruct (IHe1 t1) as [H_val_e1 | [e1' H_step_e1] ]; auto.
-      + assert (H:= exists_subst e1 x e2). 
-        destruct H as [e' H_sub].
-        exists e'.
-        apply ST_Let_Right; auto.
-      + exists (E_Let x e1' e2).
-        apply ST_Let_Left. assumption.
+    induction e; intros;
+    try (eauto with local_hints; fail);
+    (right; inversion H_type; subst)...
+
+    - inversion H1.
+
+    - destruct (IHe1 (Type_Fun t1 t)) as [H_val_e1 | [e1' H_step_e1] ]...
+      destruct (IHe2 t1) as [H_val_e2 | [e2' H_step_e2] ]...
+      destruct (canonical_form_fun e1 t1 t H4 H_val_e1) as [x [e' H_eq]]. subst.
+      destruct (IHe1 _ H4) as [H_val | H_ex];
+      [ destruct (exists_subst e2 x e') as [e'0 H_sub] 
+      | destruct H_ex as [e'0 H_ex]]...
+
+    - destruct (IHe1 _ H3) as [H_val_e1 | [e' H_step]]...
+      apply canonical_form_bool in H_val_e1...
+      destruct H_val_e1 as [H_e1_eq | H_e1_eq]; subst...
+      
+    - destruct (IHe1 t1) as [H_val_e1 | [e1' H_step_e1] ]...
+      destruct (exists_subst e1 x e2) as [e' H_sub]...
 Qed.  
+
+Hint Resolve progress : local_hints.
 
 
 Theorem preservation : forall e e' t,
@@ -315,18 +303,12 @@ Proof.
     generalize dependent e'.
     remember empty as Γ.
     induction H_type_e;
-    intros e' H_step; try (inversion H_step; fail).
-    - inversion H_step; subst.
-      + inversion H_type_e2; subst. 
-        apply (subst_typing empty e2 x e e' t2 t1); auto.   
-      + apply T_App with t1; auto.
-      + apply T_App with t1; auto.
-    - inversion H_step; subst; auto.
-      apply T_If; auto.
-    - inversion H_step; subst.
-      + apply T_Let with t1; auto.
-      + apply (subst_typing _ e1 x e2 e') in H_type_e2; auto.   
+    intros e' H_step; try (inversion H_step; subst; eauto with local_hints; fail).
+    inversion H_step; subst;
+    inversion H_type_e2; eauto with local_hints. 
 Qed.     
+
+Hint Resolve preservation : local_hints.
 
 
 (* 
