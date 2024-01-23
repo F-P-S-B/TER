@@ -1,0 +1,9 @@
+{
+    "files.exclude": {
+        "src/*.aux": true,
+        "src/*.vo": true,
+        "src/*.vok": true,
+        "src/*.vos": true,
+        "src/*.glob": true,
+    }
+}
