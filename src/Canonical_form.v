@@ -1,9 +1,8 @@
 From Coq Require Import Unicode.Utf8.
-Require Import ZArith.
-Local Open Scope Z_scope.
+Require Import Hints.
 Require Import Syntax.
 Require Import Types.
-Require Import Hints.
+Require Maps.
 
 Local Lemma t_num : ∀ e,
     has_type empty e Type_Num -> 

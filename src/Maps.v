@@ -1,20 +1,11 @@
-(** * Maps: Total and Partial Maps *)
-(* File taken from software foundations' "Programming language foundations" *)
+From Coq Require Import Unicode.Utf8.
 From Coq Require Import Arith.Arith.
 From Coq Require Import Bool.Bool.
 Require Export Coq.Strings.String.
-From Coq Require Import Lists.List.
-Import ListNotations.
 Set Default Goal Selector "!".
 
 
 
-(* ################################################################# *)
-(** * Total Maps *)
-
-(** We build up to partial maps in two steps.  First, we define a type
-    of _total maps_ that return a default value when we look up a key
-    that is not present in the map. *)
 Inductive map {A} :=
 | empty
 | update (m : map) (key : string) (val : A) 
@@ -26,40 +17,45 @@ match m with
 | update m k v => if (k =? key)%string then Some v else find m key
 end.
 
+Module Notations.
 (** We introduce a similar notation for partial maps: *)
-Notation "x '|->' v ';' m" := (update m x v)
-  (at level 100, v at next level, right associativity).
+  Notation "x '|->' v ';' m" := (update m x v)
+    (at level 100, v at next level, right associativity).
 
-(** We can also hide the last case when it is empty. *)
-Notation "x '|->' v" := (update empty x v)
-  (at level 100).
+  (** We can also hide the last case when it is empty. *)
+  Notation "x '|->' v" := (update empty x v)
+    (at level 100).
 
-Notation "m '?' x" := (find m x)
-  (at level 50, left associativity).
+  Notation "m '?' x" := (find m x)
+    (at level 50, left associativity).
+End Notations.
+
+Import Notations.
 
 Axiom Maps_extensionnality :
- forall A (m1 m2 : @map A), (forall x, m1 ? x = m2 ? x) -> m1 = m2.
-(** We now straightforwardly lift all of the basic lemmas about total
-    maps to partial maps.  *)
+ ∀ A (m1 m2 : @map A), 
+ (∀ x, m1 ? x = m2 ? x) -> 
+ m1 = m2.
 
-Lemma apply_empty : forall (A : Type) (x : string),
+Lemma apply_empty : ∀ (A : Type) (x : string),
   (@empty A) ? x = None.
 Proof.
-  intros. simpl.
-  reflexivity.
+  auto.
 Qed.
 
-Lemma update_eq : forall (A : Type) (m : map) (x: string) (v: A),
-  (x |-> v ; m) ? x = Some v.
+Local Lemma update_eq : 
+  ∀ (A : Type) (m : map) (x: string) (v: A),
+  (x |-> v; m) ? x = Some v.
 Proof.
   intros. simpl.
   rewrite String.eqb_refl.
   reflexivity.
 Qed.
 
-Theorem update_neq : forall (A : Type) (m : map) (x1 x2 : string) (v : A),
+Theorem update_neq : 
+  ∀ (A : Type) (m : map) (x1 x2 : string) (v : A),
   x2 <> x1 ->
-  (x2 |-> v ; m) ? x1 = m ? x1.
+  (x2 |-> v; m) ? x1 = m ? x1.
 Proof.
   intros A m x1 x2 v H.
   rewrite <- String.eqb_neq in H.
@@ -67,26 +63,31 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma update_shadow : forall (A : Type) (m : map) (x : string) (v1 v2 : A),
-  (x |-> v2 ; x |-> v1 ; m)  = (x |-> v2 ; m) .
+Local Lemma update_shadow : ∀ (A : Type) (m : map) (x : string) (v1 v2 : A),
+  update (update m x v1) x v2 = update m x v2.
 Proof.
   intros A m x v1 v2. 
   apply Maps_extensionnality. intro y. simpl.
   destruct (String.eqb_spec x y); reflexivity.
 Qed.
 
-Theorem update_same : forall (A : Type) (m : map) (x : string) (v : A),
+
+
+
+Theorem update_same :
+  ∀ (A : Type) (m : map) (x : string) (v : A),
   m ? x = Some v ->
-  (x |-> v ; m) = m .
+  (x |-> v; m) = m .
 Proof.
   intros A m x v H. apply Maps_extensionnality. intro y. simpl. rewrite <- H.
   destruct (String.eqb_spec x y); subst; reflexivity.
 Qed.
 
-Theorem update_permute : forall (A : Type) (m : map)
-                                (x1 x2 : string) (v1 v2 : A),
+Theorem update_permute : 
+  ∀ (A : Type) (m : map) 
+    (x1 x2 : string) (v1 v2 : A),
   x2 <> x1 ->
-  (x1 |-> v1 ; x2 |-> v2 ; m) = (x2 |-> v2 ; x1 |-> v1 ; m).
+  (x2 |-> v2; x1 |-> v1; m) = (x1 |-> v1; x2 |-> v2; m).
 Proof.
   intros A m x1 x2 v1 v2 H.
   apply Maps_extensionnality. intro y.
@@ -96,20 +97,15 @@ Proof.
   exfalso. apply H. reflexivity.
 Qed.
 
-(** One last thing: For partial maps, it's convenient to introduce a
-    notion of map inclusion, stating that all the entries in one map
-    are also present in another: *)
-
 Definition includedin {A : Type} (m m' : map) :=
-  forall (x : string) (v : A), m ? x = Some v -> m' ? x = Some v.
+  ∀ (x : string) (v : A), 
+  m ? x = Some v -> m' ? x = Some v.
 
 
-(** We can then show that map update preserves map inclusion -- that is: *)
-
-Lemma includedin_update : forall (A : Type) (m m' : map)
-                                 (x : string) (vx : A),
+Local Lemma includedin_update : 
+  ∀ (A : Type) (m m' : map) (x : string) (vx : A),
   includedin m m' ->
-  includedin (x |-> vx ; m) (x |-> vx ; m').
+  includedin (x |-> vx; m) (x |-> vx; m').
 Proof.
   unfold includedin.
   intros A m m' x vx H.
@@ -124,3 +120,12 @@ Proof.
     + apply Hxy.
 Qed.
 
+
+Local Lemma includedin_refl : 
+  ∀ (A : Type) m, @includedin A m m.
+Proof.
+  intros.
+  induction m.
+  - intros x v H. inversion H.
+  - apply includedin_update. assumption.
+Qed. 

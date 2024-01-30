@@ -24,12 +24,13 @@ Inductive expr :=
 .
 
 
+
 Inductive value : expr -> Prop :=
-| V_Num : forall z, value (E_Num z)
+| V_Num : ∀ z, value (E_Num z)
 | V_True : value E_True
 | V_False : value E_False
 | V_Fun : 
-    forall 
+    ∀ 
         (x : string) 
         (t : type) 
         (e : expr), 
