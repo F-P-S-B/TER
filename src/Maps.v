@@ -129,3 +129,59 @@ Proof.
   - intros x v H. inversion H.
   - apply includedin_update. assumption.
 Qed. 
+
+Definition same_bindings {A B : Type} (m₁ : @map A) (m₂ : @map B) :=
+  ∀ x, (m₁ ? x = None -> m₂ ? x = None) /\ ((∃ v₁, m₁ ? x = Some v₁) -> (∃ v₂, m₂ ? x = Some v₂)).
+
+Example ex1 :
+  ∀ x, 
+  same_bindings (x |-> 1) (x |-> "a"%string).
+Proof.
+  intros x x'.
+  split.
+  - destruct (String.eqb_spec x x').
+    + subst. 
+      intro. 
+      unfold find in H. rewrite String.eqb_refl in H. 
+      inversion H. 
+    + intro.
+      rewrite update_neq; auto.
+  - intros [v₁ H_val].
+    destruct (String.eqb_spec x x').
+    + subst. eexists. unfold find. rewrite String.eqb_refl. reflexivity.
+    + rewrite update_neq in H_val. 
+      * inversion H_val.
+      * assumption.
+Qed.
+
+Theorem same_bindings_update :
+  ∀ (A B : Type) (m m' : map) (x : string) (va : A) (vb : B),
+  same_bindings m m' ->
+  same_bindings (x |-> va; m) (x |-> vb; m').
+Proof.
+  intros.
+  unfold same_bindings.
+  intros x'.
+  unfold same_bindings in H.
+  specialize H with x'.
+  destruct H as [H_samebind_none H_samebind_some]. 
+  split.
+  - intro H_none. 
+    destruct (String.eqb_spec x x').
+    + subst. 
+      unfold find in H_none. rewrite String.eqb_refl in H_none. 
+      inversion H_none.
+    + rewrite update_neq in *; auto.
+  - destruct (String.eqb_spec x x').
+    + subst. repeat rewrite update_eq. eauto.
+    + repeat rewrite update_neq; eauto.
+Qed.
+
+Theorem same_bindings_refl :
+  ∀ (A : Type) m, @same_bindings A A m m.
+Proof.
+  intros.
+  induction m.
+  - intros x. split; auto.
+  - apply same_bindings_update. assumption.
+Qed. 

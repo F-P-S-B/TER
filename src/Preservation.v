@@ -28,3 +28,15 @@ Proof.
     eauto with local_hints).
   - inversion H_type_e2; subst. eauto with local_hints.
 Qed.
+
+Theorem preservation' : ∀ e e' t,
+  has_type empty e t  ->
+  step e e'  ->
+  has_type empty e' t.
+Proof.
+  induction e; intros e' τ H_type H_step;
+  try (inversion H_type; subst; 
+    inversion H_step; subst;
+    eauto with local_hints).
+    inversion H4. eauto with local_hints.
+Qed.
