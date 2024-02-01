@@ -62,6 +62,14 @@ Inductive is_free_in (x : string) : expr -> Prop :=
     ∀ e₁ e₂, 
     is_free_in x e₂ -> 
     is_free_in x (E_Minus e₁ e₂) 
+| Free_Rec_Rec :
+  ∀ m y e, 
+  is_free_in x (E_Rec m) -> 
+  is_free_in x (E_Rec (y |-> e; m))
+| Free_Rec_Add :
+  ∀ m y e, 
+  is_free_in x e -> 
+  is_free_in x (E_Rec (y |-> e; m))
 .
 
 Hint Constructors is_free_in : local_hints.
@@ -78,9 +86,8 @@ Proof.
   generalize dependent Γ.
   generalize dependent t.
   induction H_free; intros;
-  try (inversion H_type; subst; eauto);
-  erewrite <- Maps.update_neq;
-  eauto.
+  try (inversion H_type; subst; try eauto; fail);
+  try (inversion H_type; subst; erewrite <- Maps.update_neq; eauto; fail).
 Qed. 
 
 

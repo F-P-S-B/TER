@@ -2,7 +2,8 @@ From Coq Require Import Unicode.Utf8.
 From Coq Require Import Strings.String.
 Local Open Scope Z_scope.
 Require Import ZArith.
-Require Import Maps.
+Require Maps.
+Import Maps.Notations.
 Require Import Hints.
 
 Inductive type :=
@@ -35,18 +36,19 @@ Inductive expr :=
 
 
 Inductive value : expr -> Prop :=
-| V_Num : ∀ z, value (E_Num z)
 | V_True : value E_True
 | V_False : value E_False
 | V_Fun : 
-    ∀ 
-        (x : string) 
-        (t : type) 
-        (e : expr), 
+    ∀ x t e, 
     value (E_Fun x t e)
+| V_Num : ∀ z, value (E_Num z)
+| V_Rec_Unit :
+  value (E_Rec Maps.empty)
 | V_Rec :
-  ∀ m,
-  value (E_Rec m)
+  ∀ m x v, 
+  value (E_Rec m) -> 
+  value v -> 
+  value (E_Rec (x |-> v; m))
 .
 
 Hint Constructors type : local_hints.

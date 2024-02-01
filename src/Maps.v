@@ -131,7 +131,8 @@ Proof.
 Qed. 
 
 Definition same_bindings {A B : Type} (m₁ : @map A) (m₂ : @map B) :=
-  ∀ x, (m₁ ? x = None -> m₂ ? x = None) /\ ((∃ v₁, m₁ ? x = Some v₁) -> (∃ v₂, m₂ ? x = Some v₂)).
+  ∀ x,
+ (∃ v₁, m₁ ? x = Some v₁) <-> (∃ v₂, m₂ ? x = Some v₂).
 
 Example ex1 :
   ∀ x, 
@@ -139,18 +140,18 @@ Example ex1 :
 Proof.
   intros x x'.
   split.
-  - destruct (String.eqb_spec x x').
+  - intros [v₁ H]. 
+    destruct (String.eqb_spec x x').
     + subst. 
-      intro. 
-      unfold find in H. rewrite String.eqb_refl in H. 
-      inversion H. 
-    + intro.
-      rewrite update_neq; auto.
-  - intros [v₁ H_val].
+      exists "a"%string.
+      simpl. rewrite String.eqb_refl.
+      reflexivity. 
+    + rewrite update_neq in H; auto. inversion H. 
+  - intros [v₁ H].
     destruct (String.eqb_spec x x').
     + subst. eexists. unfold find. rewrite String.eqb_refl. reflexivity.
-    + rewrite update_neq in H_val. 
-      * inversion H_val.
+    + rewrite update_neq in H. 
+      * inversion H.
       * assumption.
 Qed.
 
@@ -164,17 +165,60 @@ Proof.
   intros x'.
   unfold same_bindings in H.
   specialize H with x'.
-  destruct H as [H_samebind_none H_samebind_some]. 
-  split.
-  - intro H_none. 
-    destruct (String.eqb_spec x x').
-    + subst. 
-      unfold find in H_none. rewrite String.eqb_refl in H_none. 
-      inversion H_none.
-    + rewrite update_neq in *; auto.
-  - destruct (String.eqb_spec x x').
-    + subst. repeat rewrite update_eq. eauto.
-    + repeat rewrite update_neq; eauto.
+  split;
+  intros [v H_v];
+  destruct (String.eqb_spec x x');
+  try (subst; eexists; rewrite update_eq; reflexivity);
+  rewrite update_neq in H_v; auto;
+  rewrite update_neq; eauto;
+  try rewrite <- H; eauto;
+  try rewrite H; eauto.
+Qed.
+       
+
+Lemma same_bindings_empty : 
+  ∀ (A B : Type) m,
+  @same_bindings A B empty m -> 
+  m = empty.
+Proof.
+  intros A B.
+  induction m; intro H_same; auto.
+  assert (H_same' := H_same).
+  unfold same_bindings in H_same. 
+  specialize H_same with key as [H1 H2].
+  apply Maps_extensionnality.
+  intro.
+  destruct (String.eqb_spec key x).
+  - subst.
+    assert (∃ v₁ : A, empty ? x = Some v₁).
+    {
+      apply H2.
+      eexists. simpl.
+      rewrite String.eqb_refl. 
+      reflexivity.
+    }
+    inversion H.
+    inversion H0.
+  - assert (∃ v₁ : A, empty ? x = Some v₁).
+    {
+      apply H2.
+      eexists. simpl.
+      rewrite String.eqb_refl. 
+      reflexivity.
+    }
+    inversion H.
+    inversion H0.
+Qed.
+  
+
+Lemma same_bindings_empty_empty : 
+  ∀ (A B : Type), @same_bindings A B empty empty.
+Proof.
+  intros.
+  unfold same_bindings. intro.
+  split; 
+  intros [v H_contra]; 
+  inversion H_contra.
 Qed.
 
 Theorem same_bindings_refl :
@@ -185,3 +229,61 @@ Proof.
   - intros x. split; auto.
   - apply same_bindings_update. assumption.
 Qed. 
+
+Theorem same_bindings_sym :
+  ∀ (A B: Type) (m1 : @map A) (m2 : @map B), 
+  same_bindings m1 m2 -> 
+  same_bindings m2 m1.
+Proof.
+  intros.
+  unfold same_bindings in *.
+  split; intro.
+  - rewrite H. assumption.
+  - rewrite <- H. assumption.
+Qed.
+
+
+Theorem same_bindings_trans :
+  ∀ (A B C : Type) (m1 : @map A) (m2 : @map B) (m3 : @map C),
+  same_bindings m1 m2 -> 
+  same_bindings m2 m3 -> 
+  same_bindings m1 m3.
+Proof.
+  intros.
+  unfold same_bindings in *.
+  split; intro.
+  - rewrite <- H0.
+    rewrite <- H.
+    assumption.
+  - rewrite H.
+    rewrite H0.
+    assumption.
+Qed.
+
+Theorem same_bindings_shadow_add :
+  ∀ (A B : Type) (m1 : @map A ) (m2 : @map B) x (v v' : A), 
+  same_bindings m1 m2 ->  
+  m1 ? x = Some v ->
+  same_bindings (x |-> v'; m1) m2.
+Proof.
+  intros A B.
+  induction m1; intros m2 x v v' H_same_bindings H_m1_x.
+  - apply same_bindings_empty in H_same_bindings. inversion H_m1_x. 
+  - unfold same_bindings in H_same_bindings.
+    unfold same_bindings. intro.
+    split; intro.
+    + rewrite <- H_same_bindings.
+      destruct (String.eqb_spec x0 x).
+      * subst. eexists. eassumption.
+      * rewrite update_neq in H; eauto.
+    + destruct (String.eqb_spec x0 x).
+      * subst. simpl. rewrite String.eqb_refl. eauto.
+      * rewrite update_neq; eauto.  
+        rewrite H_same_bindings. eauto. 
+Qed.
+
+      
+
+
+
+

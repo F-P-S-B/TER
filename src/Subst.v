@@ -59,22 +59,39 @@ Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
         substitution s x e1 e1' -> 
         substitution s x e2 e2' -> 
         substitution s x (E_Minus e1 e2) (E_Minus e1' e2')
+    | S_Rec_Unit : 
+        substitution s x (E_Rec Maps.empty) (E_Rec Maps.empty)
+
+    | S_Rec_Rec :
+        ∀ m m' y e e', 
+        substitution s x (E_Rec m) (E_Rec m') ->
+        substitution s x e e' ->
+        substitution s x (E_Rec (y |-> e; m)) (E_Rec (y |-> e'; m'))
+    | S_Access :
+        ∀ e e' y, 
+        substitution s x e e' ->
+        substitution s x (E_Access e y) (E_Access e' y)
 .
 
 Hint Constructors substitution : local_hints.
 
 Local Lemma exists_one : ∀ s x e, closed s -> ∃ e', 
  substitution s x e e'.
-Proof with eauto.
+Proof with eauto with local_hints.
     intros.
     induction e;
-    try destruct IHe;
+    try (try destruct IHe;
     try destruct IHe1;
     try destruct IHe2; 
     try destruct IHe3; 
     try destruct (String.eqb_spec x x0); 
     subst;
-    eauto with local_hints.
-Qed.
+    eauto with local_hints; fail).
+Admitted.
+    (* induction fields...
+    inversion IHfields as [e' H_subst].
+    inversion H_subst; subst.
+    -  
+Qed. *)
 
 Hint Resolve exists_one : local_hints.

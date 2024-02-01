@@ -22,12 +22,12 @@ Proof with eauto with local_hints.
     assert (H_closed := Closed.typed_empty _ _ H_type).
     generalize dependent t.
     induction e; intros;
-    try (eauto with local_hints; fail);
-    (right; inversion H_type; subst)...
+    try (eauto with local_hints; fail).
 
-    - inversion H1.
+    - right. inversion H_type; subst. inversion H1.
 
-    - apply Closed.closed_app in H_closed as 
+    - right. inversion H_type; subst. 
+      apply Closed.closed_app in H_closed as 
         [H_closed_e1 H_closed_e2]. 
       destruct (IHe1 H_closed_e1 (Type_Fun t1 t)) as 
         [H_val_e1 | [e1' H_step_e1] ]...
@@ -40,7 +40,8 @@ Proof with eauto with local_hints.
       + destruct (Subst.exists_one e2 x e') as [e'0 H_sub]...
       + destruct H_ex as [e'0 H_ex]...
 
-    - apply Closed.closed_if in H_closed as 
+    - right. inversion H_type; subst. 
+      apply Closed.closed_if in H_closed as 
         [H_closed_e1 H_closed_e2]. 
       destruct (IHe1 H_closed_e1 _ H3) as 
         [H_val_e1 | [e' H_step]]...
@@ -49,11 +50,13 @@ Proof with eauto with local_hints.
          [H_e1_eq | H_e1_eq]; 
       subst...
 
-    - apply Closed.closed_let in H_closed. 
+    - right. inversion H_type; subst.
+      apply Closed.closed_let in H_closed. 
       destruct (IHe1 H_closed t1) as [H_val_e1 | [e1' H_step_e1] ]...
       destruct (Subst.exists_one e1 x e2) as [e' H_sub]...
     
-    - apply Closed.closed_minus in H_closed as 
+    - right. inversion H_type; subst.
+      apply Closed.closed_minus in H_closed as 
         [H_closed_e1 H_closed_e2].
       apply IHe1 in H2 as He1... apply IHe2 in H4 as He2...
       destruct He1 as [H_v_e1 | [e1' H_step_e1]]...
@@ -61,6 +64,12 @@ Proof with eauto with local_hints.
       destruct (Canonical_form.t_num e1 H2 H_v_e1) as [z1 H_z1].
       destruct (Canonical_form.t_num e2 H4 H_v_e2) as [z2 H_z2].
       subst...
+    
+    - induction fields.
+      + left. apply V_Rec. intros * H_contra. inversion H_contra.
+      +    
+    
+    
       
 Qed.
 

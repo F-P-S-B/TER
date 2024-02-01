@@ -57,6 +57,15 @@ Inductive step : expr -> expr -> Prop :=
         step 
             (E_Minus (E_Num z1) (E_Num z2))
             (E_Num (z1 - z2))
+    | ST_Rec :
+        ∀ m x e e', 
+        value (E_Rec m) ->
+        step e e' ->
+        step (E_Rec (x |-> e; m)) (E_Rec (x |-> e'; m))
+    | ST_Access :
+        ∀ e e' x,
+        step e e' ->
+        step (E_Access e x) (E_Access e' x) 
 .
 
 Hint Constructors step : local_hints.
@@ -91,7 +100,7 @@ Proof.
       rewrite Maps.update_shadow in H5. auto.
     - inversion H_type_e; subst. eapply T_Let; eauto.
       rewrite Maps.update_permute in H7; auto.
-      eapply IHH_subst2; eauto.
+      eapply IHH_subst2; eauto.        
 Qed.
 
 Hint Resolve subst_typing : local_hints.
