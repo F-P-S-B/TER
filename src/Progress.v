@@ -65,12 +65,14 @@ Proof with eauto with local_hints.
       destruct (Canonical_form.t_num e2 H4 H_v_e2) as [z2 H_z2].
       subst...
     
-    - induction fields.
-      + left. apply V_Rec. intros * H_contra. inversion H_contra.
-      +    
+    (* TODO: 
+      - Rajouter access dans les propriétés (fermeture etc)  
+      - Voir pour redéfinir E_Rec pour pouvoir correctement faire de l'induction dessus
+      *)
+Admitted.
     
     
       
-Qed.
+(* Qed. *)
 
 Hint Resolve expr_progress : local_hints.

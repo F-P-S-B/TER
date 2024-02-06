@@ -57,18 +57,49 @@ Inductive step : expr -> expr -> Prop :=
         step 
             (E_Minus (E_Num z1) (E_Num z2))
             (E_Num (z1 - z2))
-    | ST_Rec :
-        ∀ m x e e', 
-        value (E_Rec m) ->
+    | ST_Pair_Left :  
+        ∀ (e1 e1' e2 : expr),
+        step e1 e1' ->
+        step (E_Pair e1 e2) (E_Pair e1' e2)
+    | ST_Pair_Right :  
+        ∀ (v1 e2 e2' : expr),
+        value v1 ->
+        step e2 e2' ->
+        step (E_Pair v1 e2) (E_Pair v1 e2')
+    | ST_First :  
+        ∀ (e e' : expr),
         step e e' ->
-        step (E_Rec (x |-> e; m)) (E_Rec (x |-> e'; m))
-    | ST_Access :
-        ∀ e e' x,
+        step (E_First e) (E_First e')
+    | ST_Second :  
+        ∀ (e e' : expr),
         step e e' ->
-        step (E_Access e x) (E_Access e' x) 
+        step (E_Second e) (E_Second e')
+    | ST_First_Pair :  
+        ∀ (v₁ v₂ : expr),
+        value v₁ -> 
+        value v₂ ->
+        step (E_First (E_Pair v₁ v₂)) v₁
+    | ST_Second_Pair :  
+        ∀ (v₁ v₂ : expr),
+        value v₁ -> 
+        value v₂ ->
+        step (E_Second (E_Pair v₁ v₂)) v₂
 .
 
 Hint Constructors step : local_hints.
+
+Local Lemma not_value: 
+    ∀ e e',
+    value e -> 
+    ~ step e e'.
+Proof.
+    induction e; intros e' H_val H_contra;
+    try (inversion H_val; inversion H_contra; fail).
+    inversion H_val; subst.
+    inversion H_contra; subst.
+    - apply IHe1 with e1'; auto.
+    - apply IHe2 with e2'; auto.
+Qed.
 
 
 Local Lemma subst_typing : ∀ Γ s x e e' t_e t_s, 

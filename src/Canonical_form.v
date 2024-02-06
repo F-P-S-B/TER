@@ -39,3 +39,16 @@ Proof.
     eauto.
 Qed.
 Hint Resolve t_fun : local_hints.
+
+
+Local Lemma t_pair :
+    ∀ e t₁ t₂,
+    has_type empty e (Type_Prod t₁ t₂) -> 
+    value e ->
+    ∃ e₁ e₂, e = E_Pair e₁ e₂.
+Proof.
+    intros * H_type H_val.
+    inversion H_val; subst; try (inversion H_type; fail).
+    eauto.
+Qed. 
+Hint Resolve t_pair : local_hints.

@@ -10,7 +10,7 @@ Inductive type :=
 | Type_Num
 | Type_Bool
 | Type_Fun (t₁ t₂ : type)
-| Type_Rec (m : @Maps.map type)
+| Type_Prod (t₁ t₂ : type)
 .
 
 
@@ -24,9 +24,11 @@ Inductive expr :=
 | E_Let (x : string) (e1 e2 : expr)
 | E_Num (z : Z)
 | E_Minus (e1 e2 : expr)
-| E_Rec (fields : @Maps.map expr)
-| E_Access (e : expr) (field : string)
+| E_Pair (e1 e2 : expr)
+| E_First (e : expr) 
+| E_Second (e : expr) 
 .
+(* TODO: Adapter les defs, notamment Subst *)
 
 (* 
   Les records sont des map `nom du champ -> expr`
@@ -42,13 +44,11 @@ Inductive value : expr -> Prop :=
     ∀ x t e, 
     value (E_Fun x t e)
 | V_Num : ∀ z, value (E_Num z)
-| V_Rec_Unit :
-  value (E_Rec Maps.empty)
-| V_Rec :
-  ∀ m x v, 
-  value (E_Rec m) -> 
-  value v -> 
-  value (E_Rec (x |-> v; m))
+| V_Pair :
+  ∀ e1 e2, 
+  value e1 ->
+  value e2 -> 
+  value (E_Pair e1 e2)
 .
 
 Hint Constructors type : local_hints.

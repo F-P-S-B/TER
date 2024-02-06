@@ -54,26 +54,19 @@ Inductive has_type : context -> expr -> type -> Prop :=
         has_type Γ e1 Type_Num ->
         has_type Γ e2 Type_Num ->
         has_type Γ (E_Minus e1 e2) Type_Num 
-    
-    (* | T_Rec : 
-        ∀ Γ m_fields m_types,
-        Maps.same_bindings m_fields m_types -> 
-        has_type Γ (E_Rec m_fields) (Type_Rec m_types) *)
-    | T_Rec_Unit : 
-        ∀ Γ,
-        has_type Γ (E_Rec (@Maps.empty expr)) (Type_Rec empty) 
-    | T_Rec_Rec : 
-        ∀ Γ m_fields m_types x v t,
-        has_type Γ v t ->
-        has_type Γ (E_Rec m_fields) (Type_Rec m_types) ->
-        has_type Γ 
-            (E_Rec (x|-> v; m_fields)) 
-            (Type_Rec (x |-> t; m_types)) 
-    | T_Access :
-        ∀ Γ e x t m_types,
-        has_type Γ e (Type_Rec m_types) -> 
-        m_types ? x = Some t -> 
-        has_type Γ (E_Access e x) t
+    | T_Pair :
+        ∀ Γ e₁ e₂ t₁ t₂, 
+        has_type Γ e₁ t₁ ->
+        has_type Γ e₂ t₂ ->
+        has_type Γ (E_Pair e₁ e₂) (Type_Prod t₁ t₂) 
+    | T_First :
+        ∀ Γ e t₁ t₂,
+        has_type Γ e (Type_Prod t₁ t₂) ->
+        has_type Γ (E_First e) t₁
+    | T_Second :
+        ∀ Γ e t₁ t₂,
+        has_type Γ e (Type_Prod t₁ t₂) ->
+        has_type Γ (E_Second e) t₂
     .
 
 Hint Constructors has_type : local_hints.

@@ -62,14 +62,22 @@ Inductive is_free_in (x : string) : expr -> Prop :=
     ∀ e₁ e₂, 
     is_free_in x e₂ -> 
     is_free_in x (E_Minus e₁ e₂) 
-| Free_Rec_Rec :
-  ∀ m y e, 
-  is_free_in x (E_Rec m) -> 
-  is_free_in x (E_Rec (y |-> e; m))
-| Free_Rec_Add :
-  ∀ m y e, 
+| Free_Pair_Left : 
+    ∀ e₁ e₂, 
+    is_free_in x e₁ -> 
+    is_free_in x (E_Pair e₁ e₂) 
+| Free_Pair_Right : 
+    ∀ e₁ e₂, 
+    is_free_in x e₂ -> 
+    is_free_in x (E_Pair e₁ e₂) 
+| Free_First : 
+  ∀ e, 
   is_free_in x e -> 
-  is_free_in x (E_Rec (y |-> e; m))
+  is_free_in x (E_First e)
+| Free_Second : 
+  ∀ e, 
+  is_free_in x e -> 
+  is_free_in x (E_Second e)
 .
 
 Hint Constructors is_free_in : local_hints.
