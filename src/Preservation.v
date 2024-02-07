@@ -44,7 +44,7 @@ Proof.
     
 Qed. *)
 
-(* Theorem preservation : ∀ e e' t,
+Theorem preservation : ∀ e e' t,
   has_type empty e t  ->
   step e e'  ->
   has_type empty e' t.
@@ -59,11 +59,7 @@ Proof.
     subst; 
     eauto with local_hints).
   - inversion H_type_e2; subst. eauto with local_hints.
-  - inversion H_type_e; subst. 
-    inversion H. rewrite String.eqb_refl in H1. 
-    inversion H1; subst. auto.
-  - inversion H6; subst.
-    + eapply Step.not_value in H4. exfalso. eauto.
-    + admit.
-    + 
-Qed. *)
+  - inversion H_type_e; subst. eauto. 
+  - inversion H_type_e; subst; eauto.
+  - eapply lookup_type_val; eauto. 
+Qed.
