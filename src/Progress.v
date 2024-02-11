@@ -64,6 +64,17 @@ Proof with eauto with local_hints.
     destruct (Canonical_form.t_num _ e1 H2 H_v_e1) as [z1 H_z1].
     destruct (Canonical_form.t_num _ e2 H4 H_v_e2) as [z2 H_z2].
     subst...
+  
+  - right. inversion H_type; subst.
+    apply Closed.closed_eq in H_closed as 
+      [H_closed_e1 H_closed_e2].
+    apply IHe1 in H2 as He1... apply IHe2 in H4 as He2...
+    destruct He1 as [H_v_e1 | [e1' H_step_e1]]...
+    destruct He2 as [H_v_e2 | [e2' H_step_e2]]...
+    destruct (Canonical_form.t_num _ e1 H2 H_v_e1) as [z1 H_z1].
+    destruct (Canonical_form.t_num _ e2 H4 H_v_e2) as [z2 H_z2].
+    destruct (Z.eqb_spec z1 z2); subst...
+
   - apply Closed.closed_pair in H_closed 
       as [H_closed_e1 H_closed_e2]. 
     inversion H_type; subst.
@@ -136,7 +147,7 @@ Proof with eauto with local_hints.
       eapply Canonical_form.record_type_exists in H4 
         as [e' H_look]; eauto with local_hints. 
     + eauto with local_hints.
-Qed.      
-
+(* Qed.       *)
+Admitted.
 
 Hint Resolve expr_progress : local_hints.

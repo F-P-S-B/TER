@@ -96,8 +96,10 @@ type ::= Bool
 ```
 
 # TODO
-- Paires, records
+- Paires, records \/
 - Point fixe sur les termes
+    -> Rajouter `->*` pour pouvoir vérifier les fixpoints
+
 
 - Type somme
 - Point fixe sur les types 

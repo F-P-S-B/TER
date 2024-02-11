@@ -61,6 +61,12 @@ Inductive has_type : context -> expr -> type -> Prop :=
       has_type Γ e1 Type_Num ->
       has_type Γ e2 Type_Num ->
       has_type Γ (E_Minus e1 e2) Type_Num 
+    
+  | T_Eq :
+      ∀ Γ e1 e2, 
+      has_type Γ e1 Type_Num ->
+      has_type Γ e2 Type_Num ->
+      has_type Γ (E_Eq e1 e2) Type_Bool 
 
   (* Pairs *)
   | T_Pair :

@@ -2,20 +2,27 @@ From Coq Require Import Unicode.Utf8.
 From Coq Require Import Arith.Arith.
 From Coq Require Import Bool.Bool.
 Require Export Coq.Strings.String.
+Require Import Hints.
 Set Default Goal Selector "!".
 
 
-
 Inductive map {A} :=
-| empty
-| update (m : map) (key : string) (val : A) 
+  | empty
+  | update (m : map) (key : string) (val : A) 
 .
+Hint Constructors map : maps_hints.
+
 
 Fixpoint find {A} (m : map) (key : string) : option A :=
-match m with 
-| empty => None 
-| update m k v => if (k =? key)%string then Some v else find m key
-end.
+  match m with 
+  | empty => None 
+  | update m k v => 
+      if (k =? key)%string 
+      then Some v 
+      else find m key
+  end.
+
+Hint Unfold find : maps_hints.
 
 Module Notations.
 (** We introduce a similar notation for partial maps: *)
@@ -37,20 +44,29 @@ Axiom Maps_extensionnality :
  (∀ x, m1 ? x = m2 ? x) -> 
  m1 = m2.
 
+Hint Resolve Maps_extensionnality : maps_hints.
+
+
 Lemma apply_empty : ∀ (A : Type) (x : string),
   (@empty A) ? x = None.
 Proof.
   auto.
 Qed.
 
-Local Lemma update_eq : 
+Hint Resolve apply_empty : maps_hints.
+
+Lemma update_eq : 
   ∀ (A : Type) (m : map) (x: string) (v: A),
   (x |-> v; m) ? x = Some v.
-Proof.
-  intros. simpl.
+Proof. 
+  intros. 
+  simpl.
   rewrite String.eqb_refl.
   reflexivity.
 Qed.
+
+Hint Resolve update_eq : maps_hints.
+
 
 Theorem update_neq : 
   ∀ (A : Type) (m : map) (x1 x2 : string) (v : A),
@@ -63,7 +79,10 @@ Proof.
   reflexivity.
 Qed.
 
-Local Lemma update_shadow : ∀ (A : Type) (m : map) (x : string) (v1 v2 : A),
+Hint Resolve update_neq : maps_hints.
+
+
+Lemma update_shadow : ∀ (A : Type) (m : map) (x : string) (v1 v2 : A),
   update (update m x v1) x v2 = update m x v2.
 Proof.
   intros A m x v1 v2. 
@@ -71,7 +90,7 @@ Proof.
   destruct (String.eqb_spec x y); reflexivity.
 Qed.
 
-
+Hint Resolve update_shadow : maps_hints.
 
 
 Theorem update_same :
@@ -82,6 +101,9 @@ Proof.
   intros A m x v H. apply Maps_extensionnality. intro y. simpl. rewrite <- H.
   destruct (String.eqb_spec x y); subst; reflexivity.
 Qed.
+
+Hint Resolve update_same : maps_hints.
+
 
 Theorem update_permute : 
   ∀ (A : Type) (m : map) 
@@ -97,12 +119,18 @@ Proof.
   exfalso. apply H. reflexivity.
 Qed.
 
+Hint Resolve update_permute : maps_hints.
+
+
 Definition includedin {A : Type} (m m' : map) :=
   ∀ (x : string) (v : A), 
   m ? x = Some v -> m' ? x = Some v.
 
 
-Local Lemma includedin_update : 
+Hint Unfold includedin : maps_hints.
+
+
+Lemma includedin_update : 
   ∀ (A : Type) (m m' : map) (x : string) (vx : A),
   includedin m m' ->
   includedin (x |-> vx; m) (x |-> vx; m').
@@ -120,17 +148,21 @@ Proof.
     + apply Hxy.
 Qed.
 
+Hint Resolve includedin_update : maps_hints.
 
-Local Lemma includedin_refl : 
+
+Lemma includedin_refl : 
   ∀ (A : Type) m, @includedin A m m.
 Proof.
   intros.
   induction m.
   - intros x v H. inversion H.
   - apply includedin_update. assumption.
-Qed. 
+Qed.
+Hint Resolve includedin_refl : maps_hints.
 
-Definition same_bindings {A B : Type} (m₁ : @map A) (m₂ : @map B) :=
+
+(* Definition same_bindings {A B : Type} (m₁ : @map A) (m₂ : @map B) :=
   ∀ x,
  (∃ v₁, m₁ ? x = Some v₁) <-> (∃ v₂, m₂ ? x = Some v₂).
 
@@ -280,7 +312,7 @@ Proof.
       * subst. simpl. rewrite String.eqb_refl. eauto.
       * rewrite update_neq; eauto.  
         rewrite H_same_bindings. eauto. 
-Qed.
+Qed. *)
 
       
 

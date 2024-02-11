@@ -59,6 +59,13 @@ Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
       substitution s x e1 e1' -> 
       substitution s x e2 e2' -> 
       substitution s x (E_Minus e1 e2) (E_Minus e1' e2')
+
+  | S_Eq :
+      ∀ (e1 e1' e2 e2': expr),
+      substitution s x e1 e1' -> 
+      substitution s x e2 e2' -> 
+      substitution s x (E_Eq e1 e2) (E_Eq e1' e2')
+  
   | S_Pair : 
       ∀ (e1 e1' e2 e2': expr),
       substitution s x e1 e1' -> 
@@ -96,13 +103,48 @@ substitution s x e e'.
 Proof with eauto with local_hints.
   intros.
   induction e;
-  try (try destruct IHe;
+  try destruct IHe;
   try destruct IHe1;
   try destruct IHe2; 
   try destruct IHe3; 
   try destruct (String.eqb_spec x x0); 
   subst;
-  eauto with local_hints; fail).
+  eauto with local_hints.
 Qed.
 
 Hint Resolve exists_one : local_hints.
+
+
+Local Lemma subst_typing : ∀ Γ s x e e' t_e t_s, 
+  has_type (x |-> t_s; Γ) e t_e ->
+  has_type empty s t_s ->
+  substitution s x e e' -> 
+  has_type Γ e' t_e.
+Proof.
+  intros * H_type_e H_type_s H_subst.
+  generalize dependent t_e.
+  generalize dependent t_s.
+  generalize dependent Γ.
+  induction H_subst; intros;
+  try (inversion H_type_e; subst; eauto with local_hints; fail).
+  - inversion H_type_e; subst. 
+    rewrite Maps.update_eq in H1. inversion H1; subst. apply Types.weakening_empty.
+    assumption.
+  - inversion H_type_e; subst. 
+    apply T_Var. rewrite Maps.update_neq in H2; auto.
+  - inversion H_type_e; subst.
+    apply T_Fun.   
+    rewrite Maps.update_shadow in H4. assumption.    
+  - inversion H_type_e; subst.
+    apply T_Fun.
+    rewrite Maps.update_permute in H6; auto.
+    eapply IHH_subst; eauto.
+
+  - inversion H_type_e; subst. eapply T_Let; eauto.
+        rewrite Maps.update_shadow in H5. auto.
+  - inversion H_type_e; subst. eapply T_Let; eauto.
+    rewrite Maps.update_permute in H7; auto.
+    eapply IHH_subst2; eauto.        
+Qed.
+
+Hint Resolve subst_typing : local_hints.

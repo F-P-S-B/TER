@@ -108,6 +108,8 @@ Proof.
   eapply IHt_rec2; eauto.
 Qed.
 
+Hint Resolve record_type_exists : local_hints.
+
 
 Lemma lookup_type_val :
   ∀ Γ x e e' t_e t_e',
@@ -146,3 +148,5 @@ Proof.
     rewrite n in *;
     eauto.
 Qed.
+
+Hint Resolve lookup_type_val : local_hints.

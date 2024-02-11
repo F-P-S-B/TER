@@ -61,7 +61,16 @@ Inductive is_free_in (x : string) : expr -> Prop :=
   | Free_Minus_Right : 
       ∀ e₁ e₂, 
       is_free_in x e₂ -> 
-      is_free_in x (E_Minus e₁ e₂) 
+      is_free_in x (E_Minus e₁ e₂)
+
+  | Free_Eq_Left : 
+      ∀ e₁ e₂, 
+      is_free_in x e₁ -> 
+      is_free_in x (E_Eq e₁ e₂) 
+  | Free_Eq_Right : 
+      ∀ e₁ e₂, 
+      is_free_in x e₂ -> 
+      is_free_in x (E_Eq e₁ e₂)  
   | Free_Pair_Left : 
       ∀ e₁ e₂, 
       is_free_in x e₁ -> 
@@ -200,7 +209,20 @@ Qed.
 
 Hint Resolve closed_minus : local_hints.
 
+Lemma closed_eq : 
+  ∀ e₁ e₂, 
+  closed (E_Eq e₁ e₂) -> 
+  closed e₁ /\ closed e₂.
+Proof.
+  intros.
+  unfold closed in *.
+  split; 
+    intros x H_contra;
+    apply H with x;
+    eauto with local_hints.
+Qed.
 
+Hint Resolve closed_eq : local_hints.
 
 Lemma closed_pair : 
   ∀ e₁ e₂, 
@@ -246,7 +268,6 @@ Qed.
 
 
 Hint Resolve closed_second : local_hints.
-
 
 
 Lemma closed_record : 

@@ -57,6 +57,29 @@ Inductive step : expr -> expr -> Prop :=
       step 
           (E_Minus (E_Num z1) (E_Num z2))
           (E_Num (z1 - z2))
+
+  | ST_Eq_Left :  
+      ∀ (e1 e1' e2 : expr),
+      step e1 e1' ->
+      step (E_Eq e1 e2) (E_Eq e1' e2)
+  | ST_Eq_Right :  
+      ∀ (v1 e2 e2' : expr),
+      value v1 ->
+      step e2 e2' ->
+      step (E_Eq v1 e2) (E_Eq v1 e2')
+  | ST_Eq_Num_Eq : 
+      ∀ (z : Z),
+      step 
+          (E_Eq (E_Num z) (E_Num z))
+          (E_True)
+  | ST_Eq_Num_Neq : 
+      ∀ (z1 z2 : Z),
+      z1 <> z2 ->
+      step 
+          (E_Eq (E_Num z1) (E_Num z2))
+          (E_False)
+
+
   | ST_Pair_Left :  
       ∀ (e1 e1' e2 : expr),
       step e1 e1' ->
@@ -129,36 +152,4 @@ Proof.
 Qed.
 
 
-Local Lemma subst_typing : ∀ Γ s x e e' t_e t_s, 
-  has_type (x |-> t_s; Γ) e t_e ->
-  has_type empty s t_s ->
-  substitution s x e e' -> 
-  has_type Γ e' t_e.
-Proof.
-  intros * H_type_e H_type_s H_subst.
-  generalize dependent t_e.
-  generalize dependent t_s.
-  generalize dependent Γ.
-  induction H_subst; intros;
-  try (inversion H_type_e; subst; eauto with local_hints; fail).
-  - inversion H_type_e; subst. 
-    rewrite Maps.update_eq in H1. inversion H1; subst. apply Types.weakening_empty.
-    assumption.
-  - inversion H_type_e; subst. 
-    apply T_Var. rewrite Maps.update_neq in H2; auto.
-  - inversion H_type_e; subst.
-    apply T_Fun.   
-    rewrite Maps.update_shadow in H4. assumption.    
-  - inversion H_type_e; subst.
-    apply T_Fun.
-    rewrite Maps.update_permute in H6; auto.
-    eapply IHH_subst; eauto.
 
-  - inversion H_type_e; subst. eapply T_Let; eauto.
-    rewrite Maps.update_shadow in H5. auto.
-  - inversion H_type_e; subst. eapply T_Let; eauto.
-    rewrite Maps.update_permute in H7; auto.
-    eapply IHH_subst2; eauto.        
-Qed.
-
-Hint Resolve subst_typing : local_hints.

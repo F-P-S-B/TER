@@ -33,13 +33,9 @@ Proof.
   try (inversion H_type; subst; 
     inversion H_step; subst;
     eauto with local_hints).
+  try (inversion H1; subst; auto; fail). 
     - inversion H4. eauto with local_hints.
-    - inversion H2; subst. 
-      rewrite Maps.update_eq in H4. 
-      inversion H4; subst. auto.
-    - inversion H2; subst. 
-      inversion H5; subst.
-      + eapply T_Access.
+    -eauto with local_hints.
 
     
 Qed. *)
@@ -53,13 +49,12 @@ Proof.
   generalize dependent e'.
   remember empty as Γ.
   induction H_type_e;
-  intros e' H_step; 
+  intros e' H_step;  
   try (
     inversion H_step; 
     subst; 
-    eauto with local_hints).
-  - inversion H_type_e2; subst. eauto with local_hints.
-  - inversion H_type_e; subst. eauto. 
-  - inversion H_type_e; subst; eauto.
-  - eapply lookup_type_val; eauto. 
+    try inversion H_type_e; subst;
+    try inversion H_type_e2; subst;
+    eauto with local_hints; fail
+  ).
 Qed.
