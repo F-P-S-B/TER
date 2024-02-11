@@ -147,7 +147,15 @@ Proof with eauto with local_hints.
       eapply Canonical_form.record_type_exists in H4 
         as [e' H_look]; eauto with local_hints. 
     + eauto with local_hints.
-(* Qed.       *)
-Admitted.
+
+  - right.
+    inversion H_type; subst.
+    apply Closed.closed_fix in H_closed as H_closed_2.
+    destruct (IHe H_closed_2 _ H1) as [H_val | [e' H_step]].
+    + apply Canonical_form.t_fun in H1 as [x [e' H_eq]];
+      subst; eauto.
+      destruct (Subst.exists_one (E_Fix (E_Fun x t e')) x e') as [e'' H_sub]...
+    + eexists. apply ST_Fix. apply H_step.
+Qed.      
 
 Hint Resolve expr_progress : local_hints.

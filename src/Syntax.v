@@ -56,6 +56,9 @@ Inductive expr :=
   | E_Record_Nil
   | E_Record_Cons (x : string) (e tail : expr)
   | E_Record_Access (e : expr) (x : string)
+
+  (* Recursion *)
+  | E_Fix (e : expr)
 .
 
 (* Record lookups *)

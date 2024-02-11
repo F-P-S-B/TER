@@ -97,7 +97,7 @@ type ::= Bool
 
 # TODO
 - Paires, records \/
-- Point fixe sur les termes
+- Point fixe sur les termes V
     -> Rajouter `->*` pour pouvoir vérifier les fixpoints
 
 

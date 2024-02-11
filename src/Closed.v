@@ -101,6 +101,11 @@ Inductive is_free_in (x : string) : expr -> Prop :=
     ∀ y e, 
       is_free_in x e -> 
       is_free_in x (E_Record_Access e y) 
+
+  | Free_Fix :
+    ∀ e, 
+      is_free_in x e -> 
+      is_free_in x (E_Fix e) 
 .
 
 Hint Constructors is_free_in : local_hints.
@@ -289,6 +294,18 @@ Hint Resolve closed_record : local_hints.
 Lemma closed_access : 
   ∀ x e, 
   closed (E_Record_Access e x) -> 
+  closed e.
+Proof.
+  intros.
+  unfold closed in *.
+  intros x' H_contra;
+  apply H with x';
+  eauto with local_hints.
+Qed.
+
+Lemma closed_fix : 
+  ∀ e, 
+  closed (E_Fix e) -> 
   closed e.
 Proof.
   intros.

@@ -93,7 +93,11 @@ Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
     ∀ y e e',
     substitution s x e e' ->
     substitution s x (E_Record_Access e y) (E_Record_Access e' y)
-     
+
+  | S_Fix :
+    ∀ e e',
+    substitution s x e e' -> 
+    substitution s x (E_Fix e) (E_Fix e')  
 .
 
 Hint Constructors substitution : local_hints.

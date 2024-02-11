@@ -97,7 +97,12 @@ Inductive has_type : context -> expr -> type -> Prop :=
       has_type Γ e t_e -> 
       lookup_type_record x t_e = Some t_acc ->
       has_type Γ (E_Record_Access e x) t_acc
-  .
+  
+  | T_Fix :
+      ∀ Γ e t, 
+      has_type Γ e (Type_Fun t t) -> 
+      has_type Γ (E_Fix e) t
+.
 
 Hint Constructors has_type : local_hints.
 

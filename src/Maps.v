@@ -10,7 +10,6 @@ Inductive map {A} :=
   | empty
   | update (m : map) (key : string) (val : A) 
 .
-Hint Constructors map : maps_hints.
 
 
 Fixpoint find {A} (m : map) (key : string) : option A :=
@@ -22,7 +21,6 @@ Fixpoint find {A} (m : map) (key : string) : option A :=
       else find m key
   end.
 
-Hint Unfold find : maps_hints.
 
 Module Notations.
 (** We introduce a similar notation for partial maps: *)
@@ -44,7 +42,7 @@ Axiom Maps_extensionnality :
  (∀ x, m1 ? x = m2 ? x) -> 
  m1 = m2.
 
-Hint Resolve Maps_extensionnality : maps_hints.
+
 
 
 Lemma apply_empty : ∀ (A : Type) (x : string),
@@ -53,7 +51,7 @@ Proof.
   auto.
 Qed.
 
-Hint Resolve apply_empty : maps_hints.
+
 
 Lemma update_eq : 
   ∀ (A : Type) (m : map) (x: string) (v: A),
@@ -65,7 +63,7 @@ Proof.
   reflexivity.
 Qed.
 
-Hint Resolve update_eq : maps_hints.
+
 
 
 Theorem update_neq : 
@@ -79,7 +77,7 @@ Proof.
   reflexivity.
 Qed.
 
-Hint Resolve update_neq : maps_hints.
+
 
 
 Lemma update_shadow : ∀ (A : Type) (m : map) (x : string) (v1 v2 : A),
@@ -90,7 +88,7 @@ Proof.
   destruct (String.eqb_spec x y); reflexivity.
 Qed.
 
-Hint Resolve update_shadow : maps_hints.
+
 
 
 Theorem update_same :
@@ -102,7 +100,7 @@ Proof.
   destruct (String.eqb_spec x y); subst; reflexivity.
 Qed.
 
-Hint Resolve update_same : maps_hints.
+
 
 
 Theorem update_permute : 
@@ -119,7 +117,7 @@ Proof.
   exfalso. apply H. reflexivity.
 Qed.
 
-Hint Resolve update_permute : maps_hints.
+
 
 
 Definition includedin {A : Type} (m m' : map) :=
@@ -127,7 +125,7 @@ Definition includedin {A : Type} (m m' : map) :=
   m ? x = Some v -> m' ? x = Some v.
 
 
-Hint Unfold includedin : maps_hints.
+
 
 
 Lemma includedin_update : 
@@ -148,7 +146,6 @@ Proof.
     + apply Hxy.
 Qed.
 
-Hint Resolve includedin_update : maps_hints.
 
 
 Lemma includedin_refl : 
@@ -159,7 +156,6 @@ Proof.
   - intros x v H. inversion H.
   - apply includedin_update. assumption.
 Qed.
-Hint Resolve includedin_refl : maps_hints.
 
 
 (* Definition same_bindings {A B : Type} (m₁ : @map A) (m₂ : @map B) :=

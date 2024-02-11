@@ -109,26 +109,38 @@ Inductive step : expr -> expr -> Prop :=
       step (E_Second (E_Pair v₁ v₂)) v₂
   
   | ST_Record_Tail : 
-    ∀ x e tail tail', 
-    step tail tail' -> 
-    step (E_Record_Cons x e tail) (E_Record_Cons x e tail')
+      ∀ x e tail tail', 
+      step tail tail' -> 
+      step (E_Record_Cons x e tail) (E_Record_Cons x e tail')
   
   | ST_Record : 
-    ∀ x e e' tail,
-    value tail -> 
-    step e e' -> 
-    step (E_Record_Cons x e tail) (E_Record_Cons x e' tail)
+      ∀ x e e' tail,
+      value tail -> 
+      step e e' -> 
+      step (E_Record_Cons x e tail) (E_Record_Cons x e' tail)
   
   | ST_Access : 
-    ∀ x e e',
-    step e e' ->
-    step (E_Record_Access e x) (E_Record_Access e' x)
+      ∀ x e e',
+      step e e' ->
+      step (E_Record_Access e x) (E_Record_Access e' x)
 
   | ST_Access_Value : 
-    ∀ x e v,
-    value e -> 
-    lookup_val_record x e = Some v ->
-    step (E_Record_Access e x) v
+      ∀ x e v,
+      value e -> 
+      lookup_val_record x e = Some v ->
+      step (E_Record_Access e x) v
+
+  | ST_Fix :
+      ∀ (e e': expr),
+      step e e' ->
+      step (E_Fix e) (E_Fix e')
+  
+  | ST_Fix_Fun :
+      ∀ x t e e',
+      substitution (E_Fix (E_Fun x t e)) x e e' ->
+      step 
+        (E_Fix (E_Fun x t e)) 
+        e'
 .
 
 Hint Constructors step : local_hints.

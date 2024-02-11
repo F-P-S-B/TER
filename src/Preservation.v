@@ -48,7 +48,7 @@ Proof.
   intros * H_type_e. 
   generalize dependent e'.
   remember empty as Γ.
-  induction H_type_e;
+  induction H_type_e;   
   intros e' H_step;  
   try (
     inversion H_step; 
