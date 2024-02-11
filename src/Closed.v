@@ -115,7 +115,7 @@ Definition closed e := ∀ x, ~ is_free_in x e.
 Lemma free_has_type :
     ∀ Γ e t x,
     is_free_in x e ->
-    has_type Γ e t -> 
+    Γ ⊢ e ∈ t -> 
     ∃ t_x, Γ ? x = Some t_x.
 Proof.
   intros * H_free H_type.
@@ -131,7 +131,7 @@ Hint Resolve free_has_type : local_hints.
 
 Theorem typed_empty :
     ∀ e t,
-    has_type empty e t -> 
+    empty ⊢ e ∈ t -> 
     closed e.
 Proof.
     intros * H_type x H_contra.

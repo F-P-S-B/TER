@@ -6,7 +6,7 @@ Require Maps.
 
 Local Lemma t_num : 
     ∀ Γ e,
-    has_type Γ e Type_Num -> 
+    Γ ⊢ e ∈ Type_Num -> 
     value e ->
     ∃ z, e = E_Num z.
 Proof.
@@ -19,7 +19,7 @@ Hint Resolve t_num : local_hints.
 
 Local Lemma t_bool : 
     ∀ Γ e,
-    has_type Γ e Type_Bool -> 
+    Γ ⊢ e ∈ Type_Bool -> 
     value e ->
     e = E_True \/ e = E_False.
 Proof.
@@ -32,7 +32,7 @@ Hint Resolve t_bool : local_hints.
 
 Local Lemma t_fun : 
     ∀ Γ e t1 t2,
-    has_type Γ e (Type_Fun t1 t2) -> 
+    Γ ⊢ e ∈ (Type_Fun t1 t2) -> 
     value e ->
     ∃ x e', e = E_Fun x t1 e'. 
 Proof.
@@ -46,7 +46,7 @@ Hint Resolve t_fun : local_hints.
 
 Local Lemma t_pair :
     ∀ Γ e t₁ t₂,
-    has_type Γ e (Type_Prod t₁ t₂) -> 
+    Γ ⊢ e ∈ (Type_Prod t₁ t₂) -> 
     value e ->
     ∃ e₁ e₂, e = E_Pair e₁ e₂.
 Proof.
@@ -59,7 +59,7 @@ Hint Resolve t_pair : local_hints.
 
 Local Lemma t_record_nil :
     ∀ Γ e,
-    has_type Γ e Type_Record_Nil -> 
+    Γ ⊢ e ∈ Type_Record_Nil -> 
     value e ->
     e = E_Record_Nil.
 Proof.
@@ -73,7 +73,7 @@ Hint Resolve t_record_nil : local_hints.
 
 Local Lemma t_record_cons :
     ∀ Γ e x t_x t_tail,
-    has_type Γ e (Type_Record_Cons x t_x t_tail) -> 
+    Γ ⊢ e ∈ (Type_Record_Cons x t_x t_tail) -> 
     value e ->
     ∃ e' e_tail, e = E_Record_Cons x e' e_tail.
 Proof.
@@ -88,7 +88,7 @@ Hint Resolve t_record_cons : local_hints.
 Local Lemma record_type_exists :
   ∀ Γ e t_rec t x, 
   value e ->
-  has_type Γ e t_rec ->
+  Γ ⊢ e ∈ t_rec ->
   lookup_type_record x t_rec = Some t -> 
   ∃ e', lookup_val_record x e = Some e'.
 Proof.
@@ -113,11 +113,11 @@ Hint Resolve record_type_exists : local_hints.
 
 Lemma lookup_type_val :
   ∀ Γ x e e' t_e t_e',
-  has_type Γ e t_e ->
+  Γ ⊢ e ∈ t_e ->
   value e ->
   lookup_type_record x t_e = Some t_e' ->
   lookup_val_record x e = Some e' -> 
-  has_type Γ e' t_e'.
+  Γ ⊢ e' ∈ t_e'.
 Proof.
   intros Γ x e e' t_e.
   generalize dependent Γ. 

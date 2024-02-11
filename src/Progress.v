@@ -15,8 +15,8 @@ Import Maps.Notations.
 
 
 Theorem expr_progress : ∀ e t,
-  has_type empty e t -> 
-  value e \/ ∃ e', step e e'.
+  empty ⊢ e ∈ t -> 
+  value e \/ ∃ e', e ->> e'.
 Proof with eauto with local_hints.
   intros * H_type.
   assert (H_closed := Closed.typed_empty _ _ H_type).

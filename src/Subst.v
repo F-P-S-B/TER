@@ -10,6 +10,7 @@ Import Maps.Notations.
 Require Import Syntax.
 Require Import Types.
 
+
 Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
   | S_Var_Eq :
       substitution s x (E_Var x) s
@@ -24,7 +25,7 @@ Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
       ∀ (t : type) (e : expr),
       substitution s x (E_Fun x t e) (E_Fun x t e)
   | S_Fun_Neq : 
-      ∀ (y: string) (t : type) (e e_aux e' : expr),
+      ∀ (y: string) (t : type) (e e' : expr),
       x <> y ->
       closed s ->
       substitution s x e e' -> 
@@ -120,10 +121,10 @@ Hint Resolve exists_one : local_hints.
 
 
 Local Lemma subst_typing : ∀ Γ s x e e' t_e t_s, 
-  has_type (x |-> t_s; Γ) e t_e ->
-  has_type empty s t_s ->
+  (x |-> t_s; Γ) ⊢ e ∈ t_e ->
+  empty ⊢ s ∈ t_s ->
   substitution s x e e' -> 
-  has_type Γ e' t_e.
+  Γ ⊢ e' ∈ t_e.
 Proof.
   intros * H_type_e H_type_s H_subst.
   generalize dependent t_e.

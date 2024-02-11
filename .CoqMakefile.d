@@ -10,6 +10,9 @@ src/Hints.vos src/Hints.vok src/Hints.required_vos: src/Hints.v
 src/Maps.vo src/Maps.glob src/Maps.v.beautified src/Maps.required_vo: src/Maps.v src/Hints.vo
 src/Maps.vio: src/Maps.v src/Hints.vio
 src/Maps.vos src/Maps.vok src/Maps.required_vos: src/Maps.v src/Hints.vos
+src/Multi.vo src/Multi.glob src/Multi.v.beautified src/Multi.required_vo: src/Multi.v src/Syntax.vo src/Step.vo src/Subst.vo src/Hints.vo src/Closed.vo
+src/Multi.vio: src/Multi.v src/Syntax.vio src/Step.vio src/Subst.vio src/Hints.vio src/Closed.vio
+src/Multi.vos src/Multi.vok src/Multi.required_vos: src/Multi.v src/Syntax.vos src/Step.vos src/Subst.vos src/Hints.vos src/Closed.vos
 src/Preservation.vo src/Preservation.glob src/Preservation.v.beautified src/Preservation.required_vo: src/Preservation.v src/Hints.vo src/Syntax.vo src/Types.vo src/Subst.vo src/Step.vo src/Canonical_form.vo src/Maps.vo
 src/Preservation.vio: src/Preservation.v src/Hints.vio src/Syntax.vio src/Types.vio src/Subst.vio src/Step.vio src/Canonical_form.vio src/Maps.vio
 src/Preservation.vos src/Preservation.vok src/Preservation.required_vos: src/Preservation.v src/Hints.vos src/Syntax.vos src/Types.vos src/Subst.vos src/Step.vos src/Canonical_form.vos src/Maps.vos

@@ -117,3 +117,104 @@ Inductive value : expr -> Prop :=
 Hint Constructors type : local_hints.
 Hint Constructors expr : local_hints.
 Hint Constructors value : local_hints.
+
+
+Declare Custom Entry expr.
+Coercion E_Var : string >-> expr.
+Definition x := "x"%string.
+Definition y := "y"%string.
+Definition z := "z"%string.
+
+Notation "<{ e }>" := e (e custom expr at level 99).
+Notation "( e )" := e (in custom expr, e at level 99).
+Notation "{ e }" := e (in custom expr, e at level 99).
+Notation "x" := x (in custom expr at level 0, x constr at level 0).
+Notation "τ₁ -> τ₂" := 
+  (Type_Fun τ₁ τ₂) 
+  (in custom expr at level 50, right associativity).
+
+Notation "x y" := 
+  (E_App x y) (in custom expr at level 1, left associativity).
+
+Notation "'fun' x : t '=>' y" :=
+  (E_Fun x t y) (in custom expr at level 90, x at level 99,
+                     t custom expr at level 99,
+                     y custom expr at level 99,
+                     no associativity).
+Notation "'true'"  := true (at level 1).
+Notation "'true'" := E_True (in custom expr at level 0).
+Notation "'false'"  := false (at level 1).
+Notation "'false'" := E_False (in custom expr at level 0).
+Notation "'if' e1 'then' e2 'else' e3" := 
+  (E_If e1 e2 e3) 
+  (in custom expr at level 89,  
+    e1 custom expr at level 99,
+    e2 custom expr at level 99,
+    e3 custom expr at level 99,
+    left associativity).
+
+Notation "'let' x '=' e1 'in' e2" := 
+  (E_Let x e1 e2)
+  (in custom expr at level 89,  
+    e1 custom expr at level 99,
+    e2 custom expr at level 99,
+    left associativity).
+
+Coercion E_Num : Z >-> expr.
+
+Notation "e1 '-' e2" := 
+  (E_Minus e1 e2)
+  (in custom expr at level 91,  
+    (* e1 custom expr at level 99,
+    e2 custom expr at level 99, *)
+    left associativity).
+Notation "e1 '==' e2" := 
+  (E_Eq e1 e2)
+  (in custom expr at level 91,  
+    (* e1 custom expr at level 99,
+    e2 custom expr at level 99, *)
+    no associativity).
+
+Notation " e1 ',' e2 " := 
+  (E_Pair e1 e2)
+  (in custom expr at level 90).
+
+Notation "'first' e" := 
+  (E_First e)
+  (in custom expr at level 91).
+
+Notation "'second' e" := 
+  (E_Second e)
+  (in custom expr at level 91).
+
+Notation "'nil'" := 
+  E_Record_Nil
+  (in custom expr at level 91).
+
+Notation "e '::' x" := (E_Record_Access e x)
+  (in custom expr at level 90).
+
+
+Notation "l := e1 ; e2" := 
+  (
+    E_Record_Cons l e1 e2 
+  ) (in custom expr at level 91).
+
+Notation "'fix' e" := 
+  (E_Fix e)
+  (in custom expr at level 90, right associativity).
+
+(* Unset Printing Notations. *)
+(* Set Printing Coercions. *)
+
+
+Check <{
+  fix
+  let y = 4 in 
+  (fun x : Type_Bool => 
+  if x 
+  then first (2 - 1, y == 3)
+  else {y := 3; nil}::y) true
+}>.
+
+Check <{3}>.
