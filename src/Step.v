@@ -162,3 +162,173 @@ Qed.
 
 
 
+Local Theorem deterministic :
+    ∀ e e'₁ e'₂, 
+    e ->> e'₁ ->
+    e ->> e'₂ ->
+    e'₁ = e'₂.
+Proof with eauto with local_hints.
+  induction e; 
+  intros * H_s_1 H_s_2;
+  try (inversion H_s_1; inversion H_s_2; fail).
+  - inversion H_s_1; inversion H_s_2; subst;
+    try (exfalso; eapply not_value; eauto with local_hints; fail).
+    
+    + eapply Subst.deterministic; inversion H4; subst...
+    + inversion H7.
+    + exfalso. eapply not_value; try apply H1...
+    + inversion H2. 
+    + f_equal. apply IHe1...
+    + f_equal. apply IHe2...
+  - inversion H_s_1; inversion H_s_2; subst;
+    try (inversion H3; fail);
+    try (inversion H4; fail);
+    try (inversion H7; fail)...
+    f_equal...
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail).
+    + f_equal...
+    + eapply Subst.deterministic...
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail);
+    try (
+      f_equal; eauto with local_hints; 
+      try apply IHe1; eauto with local_hints;
+      try apply IHe2; eauto with local_hints;
+      fail
+    ).
+    + inversion H2.
+    + inversion H3.
+    + inversion H5.
+    + inversion H6.
+    + inversion H3. inversion H4; subst. reflexivity.
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail);
+    try (
+      f_equal; eauto with local_hints; 
+      try apply IHe1; eauto with local_hints;
+      try apply IHe2; eauto with local_hints;
+      fail
+    );
+    try (inversion H2; fail);
+    try (inversion H3; fail);
+    try (inversion H5; fail);
+    try (inversion H6; fail);
+    try (inversion H7; fail).
+    + inversion H. inversion H4; subst. contradiction.
+    + inversion H4. inversion H5; subst. contradiction.
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail);
+    try (
+      f_equal; eauto with local_hints; 
+      try apply IHe1; eauto with local_hints;
+      try apply IHe2; eauto with local_hints;
+      fail
+    );
+    try (inversion H2; fail);
+    try (inversion H3; fail);
+    try (inversion H5; fail);
+    try (inversion H6; fail);
+    try (inversion H7; fail).
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail);
+    try (
+      f_equal; eauto with local_hints; 
+      try apply IHe1; eauto with local_hints;
+      try apply IHe2; eauto with local_hints;
+      fail
+    );
+    try (inversion H2; fail);
+    try (inversion H3; fail);
+    try (inversion H5; fail);
+    try (inversion H6; fail);
+    try (inversion H7; fail).
+    + exfalso. eapply not_value.
+      apply V_Pair. apply H3. apply H4.
+      eauto. 
+    + exfalso. eapply not_value.
+      apply V_Pair. apply H0. apply H1.
+      eauto.
+    + inversion H3; subst...  
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail);
+    try (
+      f_equal; eauto with local_hints; 
+      try apply IHe1; eauto with local_hints;
+      try apply IHe2; eauto with local_hints;
+      fail
+    );
+    try (inversion H2; fail);
+    try (inversion H3; fail);
+    try (inversion H5; fail);
+    try (inversion H6; fail);
+    try (inversion H7; fail).
+    + exfalso. eapply not_value.
+      apply V_Pair. apply H3. apply H4.
+      eauto. 
+    + exfalso. eapply not_value.
+      apply V_Pair. apply H0. apply H1.
+      eauto.
+    + inversion H3; subst...
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail);
+    try (
+      f_equal; eauto with local_hints; 
+      try apply IHe1; eauto with local_hints;
+      try apply IHe2; eauto with local_hints;
+      fail
+    );
+    try (inversion H2; fail);
+    try (inversion H3; fail);
+    try (inversion H5; fail);
+    try (inversion H6; fail);
+    try (inversion H7; fail).
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail);
+    try (
+      f_equal; eauto with local_hints; 
+      try apply IHe1; eauto with local_hints;
+      try apply IHe2; eauto with local_hints;
+      fail
+    );
+    try (inversion H2; fail);
+    try (inversion H3; fail);
+    try (inversion H5; fail);
+    try (inversion H6; fail);
+    try (inversion H7; fail).
+    rewrite H8 in H3. inversion H3... 
+  - inversion H_s_1; inversion H_s_2; subst;
+    try 
+      (exfalso; eapply not_value;
+       eauto with local_hints; fail);
+    try (
+      f_equal; eauto with local_hints; 
+      try apply IHe1; eauto with local_hints;
+      try apply IHe2; eauto with local_hints;
+      fail
+    );
+    try (inversion H2; fail);
+    try (inversion H3; fail);
+    try (inversion H5; fail);
+    try (inversion H6; fail);
+    try (inversion H7; fail).
+    + inversion H_s_1; subst. inversion H2. inversion H0.
+    + inversion H2; subst.
+      eapply Subst.deterministic...    
+Qed.

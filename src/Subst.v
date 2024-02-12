@@ -118,7 +118,24 @@ Proof with eauto with local_hints.
 Qed.
 
 Hint Resolve exists_one : local_hints.
+Search (_ = _ -> S _ = S _).
 
+Local Theorem deterministic :
+  ∀ s x e e'₁ e'₂, 
+  substitution s x e e'₁ ->
+  substitution s x e e'₂ ->
+  e'₁ = e'₂.
+Proof with eauto with local_hints.
+  intros s x e.
+  generalize dependent s.
+  generalize dependent x.
+  induction e; 
+  intros * H_s_1 H_s_2; 
+  inversion H_s_1; inversion H_s_2; subst;
+  try contradiction;
+  f_equal;
+  eauto with local_hints.
+Qed.
 
 Local Lemma subst_typing : ∀ Γ s x e e' t_e t_s, 
   (x |-> t_s; Γ) ⊢ e ∈ t_e ->

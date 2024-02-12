@@ -133,6 +133,7 @@ Notation "τ₁ -> τ₂" :=
   (Type_Fun τ₁ τ₂) 
   (in custom expr at level 50, right associativity).
 
+
 Notation "x y" := 
   (E_App x y) (in custom expr at level 1, left associativity).
 

@@ -57,9 +57,10 @@ Definition inner_eq := <{
         else 
           if n == 0 
           then false 
-          else 
+          else  
             eq (n-1) (m-1)
 }>.
+
 
 Example multistep_fix : 
 <{
@@ -151,7 +152,84 @@ Proof with eauto 8 with zarith local_hints.
                       
                 }
           } 
-      
-
       }
+Qed.
+
+Example multistep_fix' : 
+<{
+  (fix inner_eq) 1 1
+}> ->>* <{true}>.
+Proof with eauto 8 with zarith local_hints.
+  assert (H_closed_fun_eq : 
+    closed (E_Fix inner_eq)
+  ).
+  {
+    unfold inner_eq.
+    intros x H_n.
+      inversion H_n.
+      inversion H0.
+      inversion H5; subst.
+      inversion H10; subst.
+      inversion H6; subst;
+      try (
+        inversion H1; subst;
+        inversion H4; subst; eauto; fail
+      ).
+      inversion H1; subst; inversion H4; subst; inversion H7; subst; eauto; inversion H9; subst; eauto; inversion H11; subst; eauto.
+  }
+  assert (eq <> n). {
+    intro; inversion H.
+  }
+  assert (eq <> m). {
+    intro; inversion H0.
+  }
+  assert (n <> m). {
+    intro; inversion H1.
+  }
+  assert (closed 1). {
+    intros x Hc; inversion Hc.
+  }
+  assert (closed 0). {
+    intros x Hc; inversion Hc.
+  }
+  eapply multistep_trans; 
+  eapply multistep_trans; 
+  eapply multistep_trans;
+  eapply multistep_trans.
+  - apply multistep_step. 
+    repeat apply ST_App_Left.
+    apply ST_Fix_Fun.
+    repeat apply S_Fun_Neq... 
+    repeat apply S_If...
+  - apply multistep_step... apply ST_App_Left. 
+    apply ST_App_Fun;
+    try apply S_Fun_Neq;
+    try repeat apply S_If...
+  - apply multistep_step... 
+    apply ST_App_Fun;
+    try apply S_Fun_Neq;
+    try repeat apply S_If...
+  - apply multistep_step...
+  - apply multistep_step...
+  - apply multistep_step...
+  - apply multistep_step...
+  - apply multistep_step.
+    repeat apply ST_App_Left.
+    apply ST_Fix_Fun.
+    repeat apply S_Fun_Neq;
+    repeat apply S_If...
+  - apply multistep_step...
+  - apply multistep_step. simpl.
+    apply ST_App_Left.
+    apply ST_App_Fun;
+    try apply S_Fun_Neq;
+    repeat apply S_If...
+  - apply multistep_step...
+  - apply multistep_step. simpl.
+    apply ST_App_Fun;
+    repeat apply S_If...
+  - apply multistep_step...
+  - apply multistep_step...
+  - apply multistep_step...  
+  - apply multistep_refl. 
 Qed.
