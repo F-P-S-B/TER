@@ -138,7 +138,7 @@ Fixpoint lookup_val_record (x : string) (e: expr) :=
   end.
 
 
-Axiom Record_Type_Extensionnality :
+(* Axiom Record_Type_Extensionnality :
   ∀ t₁ t₂,
   (
     ∀ x, 
@@ -147,7 +147,7 @@ Axiom Record_Type_Extensionnality :
     lookup_type_record x t₁ = lookup_type_record x t₂
   ) -> 
   t₁ = t₂
-.
+. *)
 
 
 
