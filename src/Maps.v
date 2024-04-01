@@ -51,8 +51,6 @@ Proof.
   auto.
 Qed.
 
-
-
 Lemma update_eq : 
   ∀ (A : Type) (m : map) (x: string) (v: A),
   (x |-> v; m) ? x = Some v.
@@ -132,18 +130,15 @@ Lemma includedin_update :
   ∀ (A : Type) (m m' : map) (x : string) (vx : A),
   includedin m m' ->
   includedin (x |-> vx; m) (x |-> vx; m').
-Proof.
+Proof with auto.
   unfold includedin.
   intros A m m' x vx H.
   intros y vy.
   destruct (eqb_spec x y) as [Hxy | Hxy].
   - rewrite Hxy.
-    rewrite update_eq. rewrite update_eq. intro H1. apply H1.
-  - rewrite update_neq.
-    + rewrite update_neq.
-      * apply H.
-      * apply Hxy.
-    + apply Hxy.
+    rewrite update_eq. rewrite update_eq...
+  - rewrite update_neq...
+    rewrite update_neq...
 Qed.
 
 
@@ -155,6 +150,28 @@ Proof.
   induction m.
   - intros x v H. inversion H.
   - apply includedin_update. assumption.
+Qed.
+
+Lemma map_neq:  ("a" |-> 1; "b" |-> 2) <> ("b" |-> 2; "a" |-> 1).
+intro.
+inversion H.
+Qed.
+
+Lemma map_eq:  ("a" |-> 1; "b" |-> 2) = ("b" |-> 2; "a" |-> 1).
+apply Maps_extensionnality.
+intros.
+unfold find.
+destruct (String.eqb "a" x) eqn:Heq; try reflexivity.
+destruct (String.eqb "b" x) eqn:Heq2; try reflexivity.
+apply String.eqb_eq in Heq.
+apply String.eqb_eq in Heq2.
+subst. inversion Heq2.
+Qed.
+
+Theorem huho: False.
+Proof.
+  apply map_neq.
+  apply map_eq.
 Qed.
 
 

@@ -11,7 +11,7 @@ e ::= x                         (var "x"    )
 
 On rajoute ensuite
     | let x = e₁ in e₂  
-    ~ (λ x . e₂) e₁       
+    ¬ (λ x . e₂) e₁       
 
     | z ∈ ℤ                     (int z      ) 
     | e₁ - e₂                   (sub e₁ e₂  )
@@ -97,13 +97,22 @@ type ::= Bool
 
 # TODO
 - Paires, records \/
-- Point fixe sur les termes V
+- Point fixe sur les termes \/
     -> Rajouter `->*` pour pouvoir vérifier les fixpoints
 
 
-- Type somme
+
+- Type somme:
+    -> Etendre l'environnement de typages
+    -> Match + exhaustivité
 - Point fixe sur les types 
 => Types algébriques
+
+
+- Transformations + preuves (Equivalence, réduction similaire, typage etc):
+    - Paire -> Record \/
+    - Bool -> `type b = True | False`
+
 
 - Correction complétude entre deux systèmes (ex: sous-typage général et algorithmique)
 
