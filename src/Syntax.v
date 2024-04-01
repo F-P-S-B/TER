@@ -87,7 +87,7 @@ Inductive expr :=
   | E_Unit 
   | E_Sum_Constr (constr : string) (e : expr)
 
-  | E_Sum_Match (e : expr) (branches : list (string * expr))
+  (* | E_Sum_Match (e : expr) (branches : list (string * expr)) *)
   (* 
     Ajouter Exceptions:
       - err: Unhandled branch
@@ -100,7 +100,7 @@ Inductive expr :=
     Pour step les exception: faire 
   *)
 
-  | E_Exception (e: exception)
+  (* | E_Exception (e: exception) *)
 
 .
 
@@ -210,7 +210,7 @@ Inductive value : expr -> Prop :=
 
 
 Inductive blocking_expr : expr -> Prop := 
-  | BE_Exc : ∀ e : exception, blocking_expr (E_Exception e)
+  (* | BE_Exc : ∀ e : exception, blocking_expr (E_Exception e) *)
   | BE_Val : ∀ e : expr, value e -> blocking_expr e
 .
 
@@ -389,8 +389,3 @@ Check <{
       (match 2 with | Inl => 3 | Inr => 4  end )
 }>.
 
-Definition to_some (z : Z) : option Z := Some z.
-
-Coercion (@Some Z)  : Z >-> option.
-
-Check 1 : option Z.

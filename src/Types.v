@@ -177,9 +177,9 @@ Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop :
 
 
 
-  | T_Exception :
+  (* | T_Exception :
       ∀ Σ Γ e t,
-      has_type Σ Γ (E_Exception e) t
+      has_type Σ Γ (E_Exception e) t *)
 .
 
 Hint Constructors has_type : local_hints.
@@ -213,4 +213,19 @@ Proof.
   intros x v contra. discriminate contra.
 Qed.
 
+
+Local Lemma weakening_eq :
+  ∀ Γ₁ Γ₂ Σ e t, 
+  Maps.eq Γ₁ Γ₂ -> 
+  has_type Σ Γ₁  e  t -> 
+  has_type Σ Γ₂ e t. 
+Proof.
+  intros.
+  apply weakening with (Γ:= Γ₁).
+  - apply Maps.includedin_eq. assumption.
+  - assumption.
+Qed. 
+ 
+
+  
 Hint Resolve weakening_empty : local_hints.

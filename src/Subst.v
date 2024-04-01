@@ -119,10 +119,11 @@ Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
 
   | S_Unit : substitution s x E_Unit E_Unit
   
-  | S_Enum_Constr :
+  | S_Sum_Constr :
       ∀ constr e e',
       substitution s x e e' ->
       substitution s x (E_Sum_Constr constr e) (E_Sum_Constr constr e')
+  
 .
 
 Hint Constructors substitution : local_hints.
@@ -179,18 +180,21 @@ Proof.
   - inversion H_type_e; subst. 
     apply T_Var. rewrite Maps.update_neq in H3; auto.
   - inversion H_type_e; subst.
-    apply T_Fun.   
-    rewrite Maps.update_shadow in H5. assumption.    
+    apply T_Fun.
+    assert (H6 : Maps.eq (x |-> t; x |-> t_s; Γ) (x |-> t; Γ)) 
+      by apply Maps.update_shadow.
+    eapply Types.weakening_eq in H6; eauto.
   - inversion H_type_e; subst.
     apply T_Fun.
-    rewrite Maps.update_permute in H7; auto.
-    eapply IHH_subst; eauto.
-
+    assert (H8 : Maps.eq (y |-> t; x |-> t_s; Γ) (x |-> t_s; y |-> t; Γ)) by (apply Maps.update_permute; auto).
+    eapply Types.weakening_eq in H8; eauto.
   - inversion H_type_e; subst. eapply T_Let; eauto.
-        rewrite Maps.update_shadow in H6. auto.
+    assert (H7 : Maps.eq (x |-> t1; x |-> t_s; Γ) (x |-> t1; Γ)) 
+      by apply Maps.update_shadow.
+    eapply Types.weakening_eq in H7; eauto.
   - inversion H_type_e; subst. eapply T_Let; eauto.
-    rewrite Maps.update_permute in H8; auto.
-    eapply IHH_subst2; eauto.        
+    assert (H9 : Maps.eq (y |-> t1; x |-> t_s; Γ) (x |-> t_s; y |-> t1; Γ)) by (apply Maps.update_permute; auto).
+    eapply Types.weakening_eq in H9; eauto.
 Qed.
 
 Hint Resolve subst_typing : local_hints.

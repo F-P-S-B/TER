@@ -137,20 +137,20 @@ Fixpoint eval_aux (n : nat) (e : expr) : @result expr string   :=
 
     | <{(e₁, e₂)}> =>
       match eval_aux n e₁, eval_aux n e₂ with 
-      | Ok e₁, Ok e₂ => Ok <{e₁, e₂}>
+      | Ok e₁, Ok e₂ => Ok <{(e₁, e₂)}>
       | Err e, _  | _, Err e => Err e
       end
 
   | <{first e}> => 
       match eval_aux n e with 
-      | Ok <{ e₁, _ }> => Ok e₁
+      | Ok <{ (e₁, _) }> => Ok e₁
       | Ok _ => Err "Non pair projection first"%string
       | e => e
       end
 
   | <{second e}> => 
       match eval_aux n e with 
-      | Ok <{ _, e₂ }> => Ok e₂
+      | Ok <{ (_, e₂) }> => Ok e₂
       | Ok _ => Err "Non pair projection second"%string
       | e => e
       end

@@ -37,10 +37,39 @@ End Notations.
 
 Import Notations.
 
-Axiom Maps_extensionnality :
+Definition eq {A} (m1 m2 : @map A) : Prop := ∀ x, m1 ? x = m2 ? x. 
+
+
+(* Axiom Maps_extensionnality :
  ∀ A (m1 m2 : @map A), 
  (∀ x, m1 ? x = m2 ? x) -> 
- m1 = m2.
+ m1 = m2. *)
+(* 
+(* PAS BIEN, PERMET DE PROUVER FAUX : *)
+  Lemma map_neq:  ("a" |-> 1; "b" |-> 2) <> ("b" |-> 2; "a" |-> 1).
+  intro.
+  inversion H.
+  Qed.
+
+  Lemma map_eq:  ("a" |-> 1; "b" |-> 2) = ("b" |-> 2; "a" |-> 1).
+  apply Maps_extensionnality.
+  intros.
+  unfold find.
+  destruct (String.eqb "a" x) eqn:Heq; try reflexivity.
+  destruct (String.eqb "b" x) eqn:Heq2; try reflexivity.
+  apply String.eqb_eq in Heq.
+  apply String.eqb_eq in Heq2.
+  subst. inversion Heq2.
+  Qed.
+
+  Theorem huho: False.
+  Proof.
+    apply map_neq.
+    apply map_eq.
+  Qed. 
+*)
+ 
+ 
 
 
 
@@ -79,10 +108,9 @@ Qed.
 
 
 Lemma update_shadow : ∀ (A : Type) (m : map) (x : string) (v1 v2 : A),
-  update (update m x v1) x v2 = update m x v2.
+  eq (update (update m x v1) x v2) (update m x v2).
 Proof.
-  intros A m x v1 v2. 
-  apply Maps_extensionnality. intro y. simpl.
+  intros A m x v1 v2. intro y. simpl.
   destruct (String.eqb_spec x y); reflexivity.
 Qed.
 
@@ -92,9 +120,9 @@ Qed.
 Theorem update_same :
   ∀ (A : Type) (m : map) (x : string) (v : A),
   m ? x = Some v ->
-  (x |-> v; m) = m .
+  eq (x |-> v; m) m .
 Proof.
-  intros A m x v H. apply Maps_extensionnality. intro y. simpl. rewrite <- H.
+  intros A m x v H. intro y. simpl. rewrite <- H.
   destruct (String.eqb_spec x y); subst; reflexivity.
 Qed.
 
@@ -105,10 +133,10 @@ Theorem update_permute :
   ∀ (A : Type) (m : map) 
     (x1 x2 : string) (v1 v2 : A),
   x2 <> x1 ->
-  (x2 |-> v2; x1 |-> v1; m) = (x1 |-> v1; x2 |-> v2; m).
+  eq (x2 |-> v2; x1 |-> v1; m) (x1 |-> v1; x2 |-> v2; m).
 Proof.
   intros A m x1 x2 v1 v2 H.
-  apply Maps_extensionnality. intro y.
+  intro y.
   simpl.
   destruct (String.eqb_spec x1 y);
   destruct (String.eqb_spec x2 y); subst; auto.
@@ -152,27 +180,16 @@ Proof.
   - apply includedin_update. assumption.
 Qed.
 
-Lemma map_neq:  ("a" |-> 1; "b" |-> 2) <> ("b" |-> 2; "a" |-> 1).
-intro.
-inversion H.
-Qed.
 
-Lemma map_eq:  ("a" |-> 1; "b" |-> 2) = ("b" |-> 2; "a" |-> 1).
-apply Maps_extensionnality.
-intros.
-unfold find.
-destruct (String.eqb "a" x) eqn:Heq; try reflexivity.
-destruct (String.eqb "b" x) eqn:Heq2; try reflexivity.
-apply String.eqb_eq in Heq.
-apply String.eqb_eq in Heq2.
-subst. inversion Heq2.
-Qed.
-
-Theorem huho: False.
+Lemma includedin_eq : 
+  ∀ (A : Type) m₁ m₂, eq m₁ m₂ -> @includedin A m₁ m₂.
 Proof.
-  apply map_neq.
-  apply map_eq.
+  intros.
+  unfold eq in H.
+  unfold includedin.
+  intros. rewrite <- H. assumption. 
 Qed.
+
 
 
 (* Definition same_bindings {A B : Type} (m₁ : @map A) (m₂ : @map B) :=
