@@ -14,10 +14,185 @@ Import Maps.Notations.
 
 
 
-Theorem expr_progress : ∀ Σ e t,
+Theorem expr_progress : ∀ e Σ t,
   has_type Σ empty e t -> 
   value e \/ ∃ e', e --> e'.
 Proof with eauto with local_hints.
+  intro e.
+  pose (
+    P (e: expr) :=
+      ∀ Σ t,
+        has_type Σ empty e t -> 
+        value e \/ ∃ e', e --> e'
+  ).
+  pose (
+    P0 (branches: lsexpr) :=
+      ∀ name_sum Σ t,
+        has_type_lsexpr name_sum Σ empty branches t -> 
+        value_lsexpr branches \/ ∃ branches', branches -->ₗ branches'
+  ).
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
+  clear P P0;
+  try (intros * IH1 * IH2 * IH3 * H_type);
+  try (intros * IH1 * IH2 * H_type);
+  try (intros * IH * H_type);
+  try (intros * H_type);
+  try (eauto with local_hints; fail);
+  try assert (H_closed := Closed.typed_empty _ _ _ H_type).
+  - inversion H_type; inversion H2.
+
+  - inversion H_type; subst.
+    apply Closed.closed_app in H_closed 
+      as [H_closed_e1 H_closed_e2].
+    right.
+    assert (H_type_1 := H5).
+    assert (H_type_2 := H3).
+    apply IH1 in H5 as [H_val_e1 | [e1' H_st_e1]];
+    apply IH2 in H3 as [H_val_e2 | [e2' H_st_e2]]...
+    apply Canonical_form.t_fun in H_type_1 as [x [e1' H_eq]];
+    subst...
+    assert (H_subst := Subst.exists_one e1' e2 x H_closed_e2).
+    destruct H_subst as [e_subst H_subst]...
+
+  - inversion H_type; subst.
+    apply Closed.closed_if in H_closed 
+      as [H_closed_e1 [H_closed_e2 H_closed_e3]].
+    right.
+    assert (H_type_1 := H4).
+    assert (H_type_2 := H6).
+    assert (H_type_3 := H7).
+    apply IH1 in H4 as [H_val_e1 | [e1' H_st_e1]];
+    apply IH2 in H6 as [H_val_e2 | [e2' H_st_e2]];
+    apply IH3 in H7 as [H_val_e3 | [e3' H_st_e3]]; eauto with local_hints; 
+    apply Canonical_form.t_bool in H_type_1 as [H_true | H_false]; subst...
+
+  - inversion H_type; subst.
+    apply Closed.closed_let in H_closed.
+    right.
+    assert (H_type_1 := H5).
+    assert (H_type_2 := H6).
+    apply IH1 in H5 as [H_val_e1 | [e1' H_st_e1]]...
+    assert (H_subst := Subst.exists_one e2 e1  x H_closed).
+    destruct H_subst as [e_subst H_subst]...
+
+  - right. 
+    inversion H_type; subst.
+    apply Closed.closed_minus in H_closed 
+      as [H_closed_e1 H_closed_e2].
+    assert (H_type_1 := H3).
+    assert (H_type_2 := H5).
+    apply IH1 in H3 as [H_val_e1 | [e1' H_st_e1]];
+    apply IH2 in H5 as [H_val_e2 | [e2' H_st_e2]]...
+    apply Canonical_form.t_num in H_type_1 as [z1];
+    subst...
+    apply Canonical_form.t_num in H_type_2 as [z2];
+    subst...
+
+  - right. 
+    inversion H_type; subst.
+    apply Closed.closed_eq in H_closed 
+      as [H_closed_e1 H_closed_e2].
+    assert (H_type_1 := H3).
+    assert (H_type_2 := H5).
+    apply IH1 in H3 as [H_val_e1 | [e1' H_st_e1]];
+    apply IH2 in H5 as [H_val_e2 | [e2' H_st_e2]]...
+    apply Canonical_form.t_num in H_type_1 as [z1];
+    subst...
+    apply Canonical_form.t_num in H_type_2 as [z2]...
+    destruct (Z.eqb_spec z1 z2); subst...
+
+  - inversion H_type; subst.
+    apply Closed.closed_pair in H_closed 
+      as [H_closed_e1 H_closed_e2].
+    assert (H_type_1 := H3).
+    assert (H_type_2 := H5).
+    apply IH1 in H3 as [H_val_e1 | [e1' H_st_e1]];
+    apply IH2 in H5 as [H_val_e2 | [e2' H_st_e2]]...
+
+  - right. 
+    inversion H_type; subst.
+    apply Closed.closed_first in H_closed.
+    assert (H_type' := H2).
+    apply IH in H2 as [H_val_e1 | [e1' H_st_e1]]...
+    apply Canonical_form.t_pair in H_type' as [e1 [e2 H_eq]]; subst; inversion H_val_e1...
+
+  - right. 
+    inversion H_type; subst.
+    apply Closed.closed_second in H_closed.
+    assert (H_type' := H2).
+    apply IH in H2 as [H_val_e1 | [e1' H_st_e1]]...
+    apply Canonical_form.t_pair in H_type' as [e1 [e2 H_eq]]; subst; inversion H_val_e1...
+  - inversion H_type; subst.
+    apply Closed.closed_record in H_closed 
+      as [H_closed_e0 H_closed_tail].
+    apply IH1 in H4 as [H_val_e1 | [e1' H_st_e1]];
+    apply IH2 in H6 as [H_val_e2 | [e2' H_st_e2]]...
+
+  - right. 
+    inversion H_type; subst.
+    apply Closed.closed_access in H_closed.
+    assert (H_type' := H3).
+    apply IH in H3 as [H_val_e1 | [e1' H_st_e1]]...
+    Check Canonical_form.record_type_exists.
+    eapply Canonical_form.record_type_exists in H5 as [e' H_look]...
+  - right. 
+    inversion H_type; subst.
+    apply Closed.closed_fix in H_closed as H_closed'.
+    assert (H_type' := H2).
+    apply IH in H2 as [H_val_e1 | [e1' H_st_e1]]...
+    eapply Canonical_form.t_fun in H_val_e1 as [x [e' H_eq]]; 
+    try rewrite H_eq in *...
+    assert (H := Subst.exists_one e' <{ fix fun x : t => e' }> x H_closed).
+    destruct H...
+
+  - inversion H_type; subst.
+    apply Closed.closed_in_left in H_closed.
+    assert (H_type' := H5).
+    apply IH in H5 as [H_val_e1 | [e1' H_st_e1]]...
+
+  - inversion H_type; subst.
+    apply Closed.closed_in_right in H_closed.
+    assert (H_type' := H5).
+    apply IH in H5 as [H_val_e1 | [e1' H_st_e1]]...
+
+  - inversion H_type; subst.
+    apply Closed.closed_match in H_closed 
+      as [H_closed_e [H_closed_eleft H_closed_eright]].
+    right.
+    assert (H_type_1 := H4).
+    assert (H_type_2 := H6).
+    assert (H_type_3 := H7).
+    apply IH1 in H4 as [H_val_e1 | [e1' H_st_e1]];
+    apply IH2 in H6 as [H_val_e2 | [e2' H_st_e2]];
+    apply IH3 in H7 as [H_val_e3 | [e3' H_st_e3]]; eauto with local_hints; 
+    apply Canonical_form.t_in in H_type_1 as [e' [ H_inl | H_inr]]; subst; inversion H_val_e1...
+
+  - inversion H_type; subst.
+    apply Closed.closed_sum_constr in H_closed.
+    assert (H_type' := H5).
+    apply IH in H5 as [H_val_e1 | [e1' H_st_e1]]...
+  - right.
+    inversion H_type; subst.
+    apply Closed.closed_sum_match in H_closed as [H_closed_e0 H_closed_branches].
+    assert (H_type_e0 := H3).
+    assert (H_type_branches := H5).
+    apply IH1 in H3 as [H_val_e0 | [e1' H_st_e1]]...
+    apply IH2 in H5 as [H_val_branches | [branches' H_st_branches]]... admit.
+    (* TODO:
+        - Définir ST pour quand 2 valeurs
+        - Définir forme canonique Sum
+        - Finir démo
+    
+     *)
+
+  - inversion H_type; subst.
+    apply IH1 in H8 as [H_v_e0 | [e0' H_st_e0]];
+    apply IH2 in H5 as [H_v_l | [l' H_st_l]]...
+    
+Admitted.
+
+
+(* 
   intros * H_type.
   assert (H_closed := Closed.typed_empty _ _ _ H_type).
   generalize dependent t.
@@ -187,6 +362,7 @@ Proof with eauto with local_hints.
       inversion H_val_e1...
   - (* E_Sum_Constr: similaire à E_In_Left *)
     inversion H_type; subst.
-    apply Closed.closed_sum_constr in H_closed. eapply IHe in H_closed as [H_val_e | [e' H_step_e]]...
+    apply Closed.closed_sum_constr in H_closed. eapply IHe in H_closed as [H_val_e | [e' H_step_e]]... *)
+  - 
 Qed.
 Hint Resolve expr_progress : local_hints.

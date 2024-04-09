@@ -7,7 +7,10 @@ Require Import Syntax.
 Require Import Types.
 Require Maps.
 Import Maps.Notations.
+Require Import List.
+Import ListNotations.
 
+(* TODO: Branches des matchs *)
 Inductive is_free_in (x : string) : expr -> Prop :=
   | Free_Var : is_free_in x <{x}>
   | Free_App_Left : 
@@ -124,53 +127,162 @@ Inductive is_free_in (x : string) : expr -> Prop :=
       ∀ e constr, 
       is_free_in x e -> 
       is_free_in x (E_Sum_Constr constr e)
+  
+  | Free_Sum_Match_Base :
+    ∀ e branches, 
+    is_free_in x e -> 
+    is_free_in x (E_Sum_Match e branches)
+
+  | Free_Sum_Match_Rec_Branches :
+    ∀ e branches,
+    is_free_in_lsexpr x branches -> 
+    is_free_in x (E_Sum_Match e branches)
+
+
+with is_free_in_lsexpr  (x : string) : lsexpr -> Prop :=
+  | Free_LSExpr_Cons :
+    ∀ e constr tail,
+    is_free_in x e -> 
+    is_free_in_lsexpr x (LSE_Cons constr e tail)
+  | Free_LSExpr_Tail :
+    ∀ e constr tail,
+    is_free_in_lsexpr x tail -> 
+    is_free_in_lsexpr x (LSE_Cons constr e tail)
 .
 
 Hint Constructors is_free_in : local_hints.
+Hint Constructors is_free_in_lsexpr : local_hints.
 
 Definition closed e := ∀ x, ¬ is_free_in x e.
+Definition closed_lsexpr e := ∀ x, ¬ is_free_in_lsexpr x e.
 
 Hint Unfold closed : local_hints.
+Hint Unfold closed_lsexpr : local_hints.
 
 Lemma free_has_type :
-    ∀ Γ Σ e t x,
+    ∀ e, ∀ Γ Σ t x,
     is_free_in x e ->
-    has_type Σ Γ  e  t ->  
+    has_type Σ Γ e t ->  
     ∃ t_x, Γ ? x = Some t_x.
-Proof.
-  intros * H_free H_type.
-  generalize dependent Γ.
-  generalize dependent t.
-  induction H_free; intros;
-  inversion H_type; subst; eauto;
-  erewrite <- Maps.update_neq; eauto.
-Qed. 
+Proof with eauto with local_hints.
+  pose (
+    P (e : expr) := 
+      ∀ Γ Σ t x,
+      is_free_in x e ->
+      has_type Σ Γ e t ->  
+      ∃ t_x, Γ ? x = Some t_x
+  ). 
+  pose (
+    P0 (branches : lsexpr) :=
+      ∀ Γ Σ name_sum t x,
+        is_free_in_lsexpr x branches ->
+        has_type_lsexpr name_sum Σ Γ branches t ->  
+        ∃ t_x, Γ ? x = Some t_x
+  ).
+  intro.
+  apply expr_mut_ind with (P := P) (P0 := P0); 
+  unfold P; unfold P0; intros;
+  try (try inversion H; try inversion H0; try inversion H1; try inversion H2; try inversion H3; subst; eauto with local_hints; fail).
+  - inversion H0; 
+    inversion H1;
+    subst.
+    eapply H with (Σ := Σ) (Γ := (x |-> t; Γ)) in H6...
+    destruct H6 as [t_x Ht_x].
+    exists t_x.
+    rewrite <- Ht_x.
+    rewrite Maps.update_neq...
+  - inversion H1; 
+    inversion H2;
+    subst.
+    + eapply H with (Σ := Σ) (Γ := Γ) in H4...
+    + eapply H0 with (Σ := Σ) (Γ := (x |-> t1; Γ)) in H7...
+      destruct H7 as [t_x Ht_x].
+      exists t_x.
+      rewrite <- Ht_x.
+      rewrite Maps.update_neq...
+Qed.
 
 Hint Resolve free_has_type : local_hints.
 
 
 Theorem typed_empty :
-    ∀ Σ e t,
-    has_type Σ empty  e  t ->  
+    ∀ e, ∀ Σ t,
+    has_type Σ empty e t ->  
     closed e.
-Proof.
-    intros * H_type x H_contra.
-    generalize dependent t.
-    induction H_contra; intros;
-    try (inversion H_type; subst; eauto; fail).
-    - (* e = E_Var x *) 
-      inversion H_type; subst. inversion H2.
-    - (* e = E_fun y t e', x != y *)
-      inversion H_type; subst. 
-      eapply free_has_type with (Γ := (y |-> t; empty)) (t := t2) in H_contra as [t_x H_eq]; eauto.
-      rewrite Maps.update_neq in H_eq; eauto. inversion H_eq.
-    - (* e = E_let y e₁ e₂, x != y *) 
-      inversion H_type; subst. 
-      eapply free_has_type in H_contra; eauto.
-      inversion H_contra. 
-      rewrite Maps.update_neq in H0; eauto. inversion H0.
+Proof with eauto with local_hints.
+  pose (
+    P (e : expr) := 
+      ∀ Σ t,
+      has_type Σ empty e t ->  
+      closed e
+  ).
+  pose (
+    P0 (branches : lsexpr) :=
+      ∀ name_sum Σ t,
+        has_type_lsexpr name_sum Σ empty branches t ->  
+        closed_lsexpr branches
+  ).
+  intro e.
+  apply expr_mut_ind with (P := P) (P0 := P0);
+  unfold P; unfold P0; intros; intros x_contra H_contra;
+  try (inversion H_contra; fail).
+  - inversion H. inversion H3.
+  - inversion H1; subst. 
+    inversion H_contra; subst.
+    + eapply (H _ _ H8)...
+    + eapply (H0 _ _ H6)...
+  - inversion H_contra; inversion H0; subst.
+    eapply free_has_type in H_contra as [t_x H_eq]...
+    inversion H_eq.
+  - inversion H_contra; inversion H2; subst.
+    + eapply H in H4...        
+    + eapply H0 in H4...        
+    + eapply H1 in H4...
+  - inversion H_contra; inversion H1; subst.
+    + eapply (H _ _ H12)...
+    + eapply free_has_type in H_contra as [t_x H_eq]...
+      inversion H_eq.
+  - inversion H_contra; inversion H1; subst.
+    + eapply (H _ _ H9)...
+    + eapply (H0 _ _ H11)...
+  - inversion H_contra; inversion H1; subst.
+    + eapply (H _ _ H9)...
+    + eapply (H0 _ _ H11)...
+  - inversion H_contra; inversion H1; subst.
+    + eapply (H _ _ H9)...
+    + eapply (H0 _ _ H11)...
+  - inversion H_contra; inversion H0; subst.
+    eapply (H _ _ H6)...
+  - inversion H_contra; inversion H0; subst.
+    eapply (H _ _ H6)...
+  - inversion H_contra; inversion H1; subst.
+    + eapply (H0 _ _ H13)...
+    + eapply (H _ _ H11)...
+  - inversion H_contra; inversion H0; subst.
+    eapply (H _ _ H8)...
+  - inversion H_contra; inversion H0; subst.
+    eapply (H _ _ H6)...
+  - inversion H_contra; inversion H0; subst.
+    eapply (H _ _ H11)...
+  - inversion H_contra; inversion H0; subst.
+    eapply (H _ _ H11)...
+  - inversion H_contra; inversion H2; subst.
+    + eapply (H _ _ H12)...
+    + eapply (H0 _ _ H14)...
+    + eapply (H1 _ _ H15)...
+  - inversion H_contra; inversion H0; subst.
+    eapply (H _ _ H10)...
+  - inversion H_contra; inversion H1; subst.
+    + eapply (H _ _ H9)...
+    + apply H0 in H11.
+      eapply H11...
+  - inversion H_contra; inversion H1; subst.
+    + eapply (H _ _ H15)...
+    + apply H0 in H12. eapply H12... 
 Qed.
 
+  
+  
 Hint Resolve typed_empty : local_hints.
 
 
@@ -393,3 +505,17 @@ Proof.
     eauto with local_hints.
 Qed.
 Hint Resolve closed_sum_constr : local_hints.
+
+Lemma closed_sum_match : 
+  ∀ e branches, 
+  closed (E_Sum_Match e branches) -> 
+  closed e /\ closed_lsexpr branches.
+Proof.
+  intros.
+  unfold closed in *.
+  unfold closed_lsexpr in *.
+  split;
+    intros x H_contra;
+    apply H with x;
+    eauto with local_hints.
+Qed.

@@ -87,7 +87,7 @@ Inductive expr :=
   | E_Unit 
   | E_Sum_Constr (constr : string) (e : expr)
 
-  (* | E_Sum_Match (e : expr) (branches : list (string * expr)) *)
+  | E_Sum_Match (e : expr) (branches : lsexpr)
   (* 
     Ajouter Exceptions:
       - err: Unhandled branch
@@ -101,10 +101,26 @@ Inductive expr :=
   *)
 
   (* | E_Exception (e: exception) *)
-
+  with 
+    lsexpr :=
+    | LSE_Nil : lsexpr
+    | LSE_Cons : string -> expr -> lsexpr -> lsexpr
 .
 
+Fixpoint In_LSE (e: expr) (l: lsexpr) : Prop :=
+    match l with
+      | LSE_Nil => False
+      | LSE_Cons _ h t => h = e \/ In_LSE e t
+    end.
+
+(* Type branches, induction mutuelle, en déduire un meilleur principe de récurrence *)
+
 Check expr_ind.
+
+
+Scheme expr_mut_ind := Induction for expr Sort Prop
+  with expr_list_ind := Induction for lsexpr Sort Prop.
+  Check expr_mut_ind.
 (* 
   Pour généraliser: 
   Element Constructeur, identifier avec numéro
@@ -137,17 +153,6 @@ Fixpoint lookup_val_record (x : string) (e: expr) :=
   | _ => None 
   end.
 
-
-(* Axiom Record_Type_Extensionnality :
-  ∀ t₁ t₂,
-  (
-    ∀ x, 
-    record_type t₁ -> 
-    record_type t₂ ->
-    lookup_type_record x t₁ = lookup_type_record x t₂
-  ) -> 
-  t₁ = t₂
-. *)
 
 
 
@@ -206,6 +211,13 @@ Inductive value : expr -> Prop :=
       ∀ constr e,
       value e ->
       value (E_Sum_Constr constr e)
+with value_lsexpr : lsexpr -> Prop :=
+  | V_LSExpr_Nil : value_lsexpr LSE_Nil
+  | V_LSExpr_Cons :
+    ∀ e branches constr,
+      value e ->
+      value_lsexpr branches ->
+      value_lsexpr (LSE_Cons constr e branches)
 .
 
 
@@ -216,7 +228,9 @@ Inductive blocking_expr : expr -> Prop :=
 
 Hint Constructors type : local_hints.
 Hint Constructors expr : local_hints.
+Hint Constructors lsexpr : local_hints.
 Hint Constructors value : local_hints.
+Hint Constructors value_lsexpr : local_hints.
 
 (* TODO: revoir priorités *)
 Definition x := "x"%string.
@@ -231,7 +245,7 @@ Notation "'{{' e '}}'" := e (e custom expr_ty at level 99).
 Notation "x" := x (in custom expr_ty at level 0, x constr at level 0).
 Notation "'Bool'" := Type_Bool (in custom expr_ty at level 0).
 Notation "'Int'" := Type_Num (in custom expr_ty at level 0).
-Notation "'Unit'" := Type_Num (in custom expr_ty at level 0).
+Notation "'Unit'" := Type_Unit (in custom expr_ty at level 0).
 Notation "'(' t ')'" := t (in custom expr_ty at level 0).
 Notation "t1 '->' t2" := (Type_Fun t1 t2) (in custom expr_ty at level 50, right associativity).
 Notation "t1 '*' t2" := (Type_Prod t1 t2) (in custom expr_ty at level 30, left associativity).
@@ -259,8 +273,7 @@ Coercion E_Var : string >-> expr.
 
 Notation "<{ e }>" := e 
   (
-    e custom expr at level 99,
-    format "'[v' '<{' '/' e '/' '}>' ']'"
+    e custom expr at level 99
   ).
 Notation "( e )" := e (in custom expr, e at level 99).
 (* Notation "{ e }" := e (in custom expr, e at level 99). *)
@@ -276,7 +289,7 @@ Notation "'fun' x ':' t '=>' e" :=
     t custom expr_ty at level 99,
     e custom expr at level 99,
     no associativity,
-    format "'[v ' 'fun'  x  ':'  t  '=>' '/' '[hv' e ']' ']'"
+    format "'[v ' 'fun'  x  ':'  t  '=>'  e ']'"
   ).
 Notation "'true'"  := true (at level 1).
 Notation "'true'" := E_True (in custom expr at level 0).
@@ -298,7 +311,7 @@ Notation "'let' x '=' e1 'in' e2" :=
     e1 custom expr at level 99,
     e2 custom expr at level 99,
     left associativity,
-    format "'[ ' 'let'  x  '='  e1  'in' '/' e2 ']'"
+    format "'[ ' 'let'  x  '='  e1  'in'  '/' e2 ']'"
     
     ).
 
@@ -349,7 +362,7 @@ Notation "'fix' e" :=
   (
     in custom expr at level 90, 
     right associativity,
-    format "'[v ' 'fix' '/' '[' e ']' ']'" 
+    format "'[v ' 'fix'  e ']'" 
   )
   .
 
@@ -389,3 +402,5 @@ Check <{
       (match 2 with | Inl => 3 | Inr => 4  end )
 }>.
 
+
+Check expr_mut_ind.

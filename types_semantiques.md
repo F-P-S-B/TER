@@ -1,3 +1,15 @@
+TODO: 
+Mini-rapport: ~ 5 pages
+
+  Bilan sur ce qu'on a fait, overview, éléments techniques etc
+
+Forme:
+- Résumé de la sémantique, du typage
+- Propriétés principales
+
+
+
+
 # Syntaxe (abstraite)
 ```
 Fragment de base

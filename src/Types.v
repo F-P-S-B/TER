@@ -34,7 +34,7 @@ Fixpoint lookup_type_sum (constr : string) (Σ : sum_types_constructors)
         end
     end.
 
-Fixpoint expected_parameter 
+(* Fixpoint expected_parameter 
   (constrs : list (type * string)) 
   (branches : list (string * expr)) : (list (string * expr * option type)) :=
   match branches with 
@@ -44,7 +44,7 @@ Fixpoint expected_parameter
     let e := snd h in 
     let t := lookup_type_constrs name constrs in 
     (name, e, t)::(expected_parameter constrs branches')
-  end.
+  end. *)
 
 
 Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop := 
@@ -94,22 +94,22 @@ Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop :
 
   | T_Minus : 
       ∀ Γ Σ e1 e2, 
-      has_type Σ Γ  e1  Type_Num -> 
-      has_type Σ Γ  e2  Type_Num -> 
-      has_type Σ Γ  (E_Minus e1 e2)  Type_Num  
+      has_type Σ Γ e1 Type_Num -> 
+      has_type Σ Γ e2 Type_Num -> 
+      has_type Σ Γ (E_Minus e1 e2)  Type_Num  
     
   | T_Eq :
       ∀ Γ Σ e1 e2, 
-      has_type Σ Γ  e1  Type_Num -> 
-      has_type Σ Γ  e2  Type_Num -> 
-      has_type Σ Γ  (E_Eq e1 e2)  Type_Bool  
+      has_type Σ Γ e1 Type_Num -> 
+      has_type Σ Γ e2 Type_Num -> 
+      has_type Σ Γ (E_Eq e1 e2)  Type_Bool  
 
   (* Pairs *)
   | T_Pair :
       ∀ Γ Σ e₁ e₂ t₁ t₂, 
-      has_type Σ Γ  e₁  t₁ -> 
-      has_type Σ Γ  e₂  t₂ -> 
-      has_type Σ Γ  (E_Pair e₁ e₂)  (Type_Prod t₁ t₂)  
+      has_type Σ Γ e₁ t₁ -> 
+      has_type Σ Γ e₂ t₂ -> 
+      has_type Σ Γ (E_Pair e₁ e₂)  (Type_Prod t₁ t₂)  
   | T_First :
       ∀ Γ Σ e t₁ t₂,
       has_type Σ Γ  e  (Type_Prod t₁ t₂) -> 
@@ -164,68 +164,102 @@ Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop :
       has_type Σ Γ e t ->
       has_type Σ Γ (E_Sum_Constr constr e) (Type_Sum name)
 
-  (* | T_Sum_Match :
-      ∀ Σ Γ e name branches,
-      has_type Σ Γ e (Type_Sum name) ->
-      ( 
-        ∀ e, 
-        In e branches ->
-        ∀ name e_branch exp_t,
-        expected_parameter (name, e_branch, exp_t)
-      
-      ) *)
-
+  | T_Sum_Match : 
+    ∀ Σ Γ t e name_sum branches, 
+    has_type Σ Γ e (Type_Sum name_sum) -> 
+    has_type_lsexpr name_sum Σ Γ branches t ->
+    has_type Σ Γ (E_Sum_Match e branches) t
 
 
   (* | T_Exception :
       ∀ Σ Γ e t,
       has_type Σ Γ (E_Exception e) t *)
+with has_type_lsexpr : string -> sum_types_constructors -> context -> lsexpr -> type -> Prop :=
+    | T_LSExpr_Nil :
+        ∀ 
+          (name_sum constr : string) 
+          (Σ : sum_types_constructors) 
+          (Γ : context) 
+          (t t': type), 
+
+        lookup_type_sum constr Σ = Some (name_sum, t') -> 
+        has_type_lsexpr name_sum Σ Γ LSE_Nil t
+        
+    | T_LSExpr_Cons :
+        ∀ name_sum Σ Γ tail constr e t_arg t, 
+        has_type_lsexpr name_sum Σ Γ tail t -> 
+        lookup_type_sum constr Σ = Some (name_sum, t_arg) -> 
+        has_type Σ Γ e {{ t_arg -> t }} -> 
+        has_type_lsexpr name_sum Σ Γ (LSE_Cons constr e tail)  t
 .
 
 Hint Constructors has_type : local_hints.
+Hint Constructors has_type_lsexpr : local_hints.
 
 
 
-Local Lemma weakening : ∀ Γ Γ' Σ e t, 
-  Maps.includedin Γ Γ' ->
-  has_type Σ Γ e t -> 
-  has_type Σ Γ' e t. 
-Proof.
-  intros * H_included H_type.
-  generalize dependent Γ'.
-  induction H_type; intros; eauto with local_hints.
-  - apply T_Fun. apply IHH_type.
-    apply Maps.includedin_update. assumption.
-  - eapply T_Let; eauto. 
-    apply IHH_type2.
-    apply Maps.includedin_update.
-    assumption.
+
+
+Lemma weakening : 
+  ∀ e Γ Γ' Σ t ,
+        Maps.includedin Γ Γ' ->
+        has_type Σ Γ e t ->
+        has_type Σ Γ' e t.
+Proof with eauto with local_hints.
+  pose (
+    P (e : expr) :=
+      ∀ Γ Γ' Σ t ,
+        Maps.includedin Γ Γ' ->
+        has_type Σ Γ e t ->
+        has_type Σ Γ' e t
+  ).
+  pose (
+    P0 (branches : lsexpr) :=
+      ∀ Γ Γ' Σ t name_sum,
+        Maps.includedin Γ Γ' ->
+        has_type_lsexpr name_sum Σ Γ branches t ->
+        has_type_lsexpr name_sum Σ Γ' branches t
+  ).
+  
+  intro e.
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; intros; try (try inversion H0; try inversion H1; try inversion H2; try inversion H3; subst; eauto with local_hints; fail).
+  - inversion H1; subst. eapply T_Fun.
+    apply H with (Γ := (x |-> t; Γ))... 
+    apply Maps.includedin_update...
+  - inversion H2; subst. eapply T_Let...   
+    apply H0 with (Γ := (x |-> t1; Γ))... 
+    apply Maps.includedin_update...
 Qed.
 
 Hint Resolve weakening : local_hints.
 
 
-Local Lemma weakening_empty : ∀ Γ Σ e t, 
-  has_type Σ empty  e  t -> 
+
+Lemma weakening_empty : ∀ Γ Σ e t, 
+  has_type Σ empty e t -> 
   has_type Σ Γ e t. 
 Proof.
-  intros. apply (weakening empty); auto.
-  intros x v contra. discriminate contra.
+  intros. apply weakening with empty.
+  - intros x v contra. discriminate contra.
+  - assumption.
 Qed.
 
 
-Local Lemma weakening_eq :
+Lemma weakening_eq :
   ∀ Γ₁ Γ₂ Σ e t, 
   Maps.eq Γ₁ Γ₂ -> 
   has_type Σ Γ₁  e  t -> 
   has_type Σ Γ₂ e t. 
 Proof.
   intros.
-  apply weakening with (Γ:= Γ₁).
+  apply weakening with Γ₁.
   - apply Maps.includedin_eq. assumption.
   - assumption.
 Qed. 
- 
 
-  
 Hint Resolve weakening_empty : local_hints.
+Hint Resolve weakening_eq : local_hints.
+
+
+
+

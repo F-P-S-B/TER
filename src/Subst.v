@@ -9,6 +9,8 @@ Require Maps.
 Import Maps.Notations.
 Require Import Syntax.
 Require Import Types.
+Require Import List.
+Import ListNotations.
 
 
 Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
@@ -123,78 +125,213 @@ Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
       ∀ constr e e',
       substitution s x e e' ->
       substitution s x (E_Sum_Constr constr e) (E_Sum_Constr constr e')
+
+  | S_Sum_Match :
+      ∀ e e' branches branches',
+      substitution s x e e' ->
+      substitution_lsexpr s x branches branches' -> 
+      substitution s x
+        (E_Sum_Match e branches) 
+        (E_Sum_Match e' branches')
   
+  (* | S_Expr : ∀ exc, substitution s x (E_Exception exc) (E_Exception exc) *)
+
+with substitution_lsexpr (s : expr) (x : string) : lsexpr -> lsexpr -> Prop :=
+  | S_LSExpr_Nil : substitution_lsexpr s x LSE_Nil LSE_Nil
+  | S_LSExpr_Cons :
+    ∀ constr e e' branches branches', 
+    substitution s x e e' ->
+    substitution_lsexpr s x branches branches' ->
+    substitution_lsexpr s x 
+      (LSE_Cons constr e branches)
+      (LSE_Cons constr e' branches')
 .
 
 Hint Constructors substitution : local_hints.
+Hint Constructors substitution_lsexpr : local_hints.
 
-Local Lemma exists_one : ∀ s x e, closed s -> ∃ e', 
-substitution s x e e'.
+Check expr_ind.
+
+Fixpoint lookup_constr (constr : string) (branches : lsexpr) : option expr :=
+  match branches with
+  | LSE_Nil => None
+  | LSE_Cons constr' e tail =>
+      if (constr =? constr')%string 
+      then Some e 
+      else lookup_constr constr tail
+  end.
+
+
+Local Lemma exists_one : 
+  ∀ e s x, closed s -> 
+  ∃ e', substitution s x e e'.
 Proof with eauto with local_hints.
   intros.
-  induction e;
-  try destruct IHe;
-  try destruct IHe1;
-  try destruct IHe2; 
-  try destruct IHe3;
-  try destruct (String.eqb_spec x x0);
-  subst; 
-  eauto with local_hints.
+  pose (
+    P (e : expr) :=
+      ∃ e', substitution s x e e'
+  ).
+  pose (
+    P0 (branches : lsexpr) :=
+      ∃ branches', substitution_lsexpr s x branches branches'
+  ).
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; intros;
+  try (
+    try destruct H0; 
+    try destruct H1; 
+    try destruct H2;
+    try destruct (String.eqb_spec x x0); subst; 
+    eauto with local_hints; 
+    fail
+  ).
 Qed.
 
 Hint Resolve exists_one : local_hints.
 Search (_ = _ -> S _ = S _).
 
 Local Theorem deterministic :
-  ∀ s x e e'₁ e'₂, 
+  ∀ e s x e'₁ e'₂, 
   substitution s x e e'₁ ->
   substitution s x e e'₂ ->
   e'₁ = e'₂.
-Proof with eauto with local_hints.
-  intros s x e.
-  generalize dependent s.
-  generalize dependent x.
-  induction e; 
-  intros * H_s_1 H_s_2; 
-  inversion H_s_1; inversion H_s_2; subst;
-  try contradiction;
-  f_equal;
-  eauto with local_hints.
+Proof.
+  intro e.
+  pose (
+    P (e: expr) :=
+      ∀ s x e'₁ e'₂, 
+        substitution s x e e'₁ ->
+        substitution s x e e'₂ ->
+        e'₁ = e'₂
+  ).
+  pose (
+    P0 (branches: lsexpr) :=
+      ∀ s x branches'₁ branches'₂, 
+        substitution_lsexpr s x branches branches'₁ ->
+        substitution_lsexpr s x branches branches'₂ ->
+        branches'₁ = branches'₂
+  ).
+
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
+  try (
+    intros * H_s_1 H_s_2; inversion H_s_1; inversion H_s_2; subst;
+    eauto with local_hints;
+    try contradiction;
+    f_equal;
+    eapply IH; eauto with local_hints;
+    fail
+  );
+  try (
+    intros * IH * H_s_1 H_s_2; inversion H_s_1; inversion H_s_2; subst;
+    eauto with local_hints;
+    try contradiction;
+    f_equal;
+    eapply IH; eauto with local_hints;
+    fail
+  );
+  try (
+    intros * IH1 * IH2 * H_s_1 H_s_2; 
+    inversion H_s_1; inversion H_s_2; subst; 
+    eauto with local_hints;
+    try contradiction;
+    f_equal;
+    try (eapply IH1; eauto with local_hints; fail);
+    try (eapply IH2; eauto with local_hints; fail);
+    fail
+  );
+  try (
+    intros * IH1 * IH2 * IH3 * H_s_1 H_s_2; 
+    inversion H_s_1; inversion H_s_2; subst;
+    eauto with local_hints;
+    try contradiction; 
+    f_equal;
+    try (eapply IH1; eauto with local_hints; fail);
+    try (eapply IH2; eauto with local_hints; fail);
+    try (eapply IH3; eauto with local_hints; fail);
+    fail
+  ).
 Qed.
 
-Local Lemma subst_typing : ∀ Γ Σ s x e e' t_e t_s, 
+Local Theorem preserves_typing : 
+  ∀ e Γ Σ s x e' t_e t_s, 
   has_type Σ (x |-> t_s; Γ)  e  t_e -> 
   has_type Σ empty  s  t_s -> 
   substitution s x e e' -> 
-  has_type Σ Γ  e'  t_e. 
-Proof.
-  intros * H_type_e H_type_s H_subst.
-  generalize dependent t_e.
-  generalize dependent t_s.
-  generalize dependent Γ.
-  induction H_subst; intros;
-  try (inversion H_type_e; subst; eauto with local_hints; fail).
-  - inversion H_type_e; subst. 
-    rewrite Maps.update_eq in H2. inversion H2; subst. apply Types.weakening_empty.
-    assumption.
-  - inversion H_type_e; subst. 
-    apply T_Var. rewrite Maps.update_neq in H3; auto.
-  - inversion H_type_e; subst.
-    apply T_Fun.
-    assert (H6 : Maps.eq (x |-> t; x |-> t_s; Γ) (x |-> t; Γ)) 
-      by apply Maps.update_shadow.
-    eapply Types.weakening_eq in H6; eauto.
-  - inversion H_type_e; subst.
-    apply T_Fun.
-    assert (H8 : Maps.eq (y |-> t; x |-> t_s; Γ) (x |-> t_s; y |-> t; Γ)) by (apply Maps.update_permute; auto).
-    eapply Types.weakening_eq in H8; eauto.
-  - inversion H_type_e; subst. eapply T_Let; eauto.
-    assert (H7 : Maps.eq (x |-> t1; x |-> t_s; Γ) (x |-> t1; Γ)) 
-      by apply Maps.update_shadow.
-    eapply Types.weakening_eq in H7; eauto.
-  - inversion H_type_e; subst. eapply T_Let; eauto.
-    assert (H9 : Maps.eq (y |-> t1; x |-> t_s; Γ) (x |-> t_s; y |-> t1; Γ)) by (apply Maps.update_permute; auto).
-    eapply Types.weakening_eq in H9; eauto.
-Qed.
+  has_type Σ Γ e' t_e. 
+Proof with eauto with local_hints.
+  intro e.
+  pose (
+    P (e: expr) :=
+      ∀ Γ Σ s x e' t_e t_s, 
+      has_type Σ (x |-> t_s; Γ)  e  t_e -> 
+      has_type Σ empty  s  t_s -> 
+      substitution s x e e' -> 
+      has_type Σ Γ e' t_e
+  ).
+  pose (
+    P0 (branches: lsexpr) :=
+      ∀ name_sum Γ Σ s x branches' t_branches t_s, 
+      has_type_lsexpr name_sum Σ (x |-> t_s; Γ) branches t_branches -> 
+      has_type Σ empty s t_s -> 
+      substitution_lsexpr s x branches branches' -> 
+      has_type_lsexpr name_sum Σ Γ branches' t_branches
+  ).
 
-Hint Resolve subst_typing : local_hints.
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
+  clear P P0;
+  try (
+    intros * H_type_e H_type_s H_subst;
+    inversion H_subst; inversion H_type_e; subst;
+    eauto with local_hints;
+    fail
+  );
+  try (
+    intros * IH * H_type_e H_type_s H_subst;
+    inversion H_subst; inversion H_type_e; subst;
+    eauto with local_hints;
+    fail
+  );
+  try (
+    intros * IH1 * IH2 * H_type_e H_type_s H_subst;
+    inversion H_subst; inversion H_type_e; subst;
+    eauto with local_hints;
+    fail
+  );
+  try (
+    intros * IH1 * IH2 * IH3 * H_type_e H_type_s H_subst;
+    inversion H_subst; inversion H_type_e; subst;
+    eauto with local_hints;
+    fail
+  ).
+  - intros * H_type_e H_type_s H_subst.
+    inversion H_subst;
+    inversion H_type_e; inversion H4; subst.
+    + rewrite String.eqb_refl in *. inversion H7; subst...
+    + apply T_Var. rewrite <- H5. symmetry; apply Maps.update_neq...
+  - intros * IH * H_type_e H_type_s H_subst.
+    inversion H_subst;
+    inversion H_type_e; subst.
+    + apply T_Fun.
+      apply Types.weakening_eq with (Γ₁ := (x |-> t; x |-> t_s; Γ))...
+      apply Maps.update_shadow.
+    + apply T_Fun.
+      assert (has_type Σ (x0 |-> t_s; x |-> t; Γ) e0 t2) 
+      by (
+        apply Types.weakening_eq with (x |-> t; x0 |-> t_s; Γ);
+        try apply Maps.update_permute; eauto with local_hints
+      )...
+  - intros * IH1 * IH2 * H_type_e H_type_s H_subst.
+    inversion H_subst;
+    inversion H_type_e; subst.
+    + eapply T_Let.
+      * eapply IH1...
+      * apply Types.weakening_eq with ((x |-> t1; x |-> t_s; Γ));
+        try apply Maps.update_shadow...
+    + eapply T_Let.
+      * eapply IH1...
+      * assert (has_type Σ (x0 |-> t_s; x |-> t1; Γ) e2 t_e)
+        by (
+          apply Types.weakening_eq with (x |-> t1; x0 |-> t_s; Γ);
+          try apply Maps.update_permute; eauto with local_hints
+        )...  
+Qed.
+Hint Resolve preserves_typing : local_hints.

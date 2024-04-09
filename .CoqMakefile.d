@@ -4,9 +4,9 @@ src/Canonical_form.vos src/Canonical_form.vok src/Canonical_form.required_vos: s
 src/Closed.vo src/Closed.glob src/Closed.v.beautified src/Closed.required_vo: src/Closed.v src/Hints.vo src/Syntax.vo src/Types.vo src/Maps.vo
 src/Closed.vio: src/Closed.v src/Hints.vio src/Syntax.vio src/Types.vio src/Maps.vio
 src/Closed.vos src/Closed.vok src/Closed.required_vos: src/Closed.v src/Hints.vos src/Syntax.vos src/Types.vos src/Maps.vos
-src/Eval.vo src/Eval.glob src/Eval.v.beautified src/Eval.required_vo: src/Eval.v src/Types.vo src/Syntax.vo src/Step.vo src/Subst.vo src/Hints.vo src/Closed.vo src/Multi.vo
-src/Eval.vio: src/Eval.v src/Types.vio src/Syntax.vio src/Step.vio src/Subst.vio src/Hints.vio src/Closed.vio src/Multi.vio
-src/Eval.vos src/Eval.vok src/Eval.required_vos: src/Eval.v src/Types.vos src/Syntax.vos src/Step.vos src/Subst.vos src/Hints.vos src/Closed.vos src/Multi.vos
+src/Eval.vo src/Eval.glob src/Eval.v.beautified src/Eval.required_vo: src/Eval.v 
+src/Eval.vio: src/Eval.v 
+src/Eval.vos src/Eval.vok src/Eval.required_vos: src/Eval.v 
 src/Hints.vo src/Hints.glob src/Hints.v.beautified src/Hints.required_vo: src/Hints.v 
 src/Hints.vio: src/Hints.v 
 src/Hints.vos src/Hints.vok src/Hints.required_vos: src/Hints.v 

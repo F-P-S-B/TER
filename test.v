@@ -25,7 +25,7 @@ Notation "<{ e }>" := e (e custom term at level 99).
 Notation "'`' e '`'" := e (in custom term at level 0, e constr).
 Notation "x" := x (in custom term at level 0, x constr at level 0).
 Notation "'#' n" := (T_Var n) (in custom term at level 0).
- Notation "x y" := (T_App x y) (in custom term at level 1, left associativity).
+ Notation "x y" := (T_App x y) (in custom term at level 2, left associativity).
 Notation "'λ' t" := (T_Abs t) (
   in custom term at level 90, 
   t custom term at level 99,
@@ -34,18 +34,16 @@ Notation "'λ' t" := (T_Abs t) (
 
 Check <{ (λ #0 #0)(λ #0 #0) }>.
 
-Fixpoint incr_indices (n : nat) (t : term) : term :=
+Fixpoint shift_indices (n : nat) (t : term) : term :=
   match t with
   | <{#v}> => if v <? n then <{#v}> else <{#`v+n`}>
-  | <{λ t}> => <{λ `incr_indices n t`}>
-  | <{t1 t2}> => <{`incr_indices n t1` `incr_indices n t2`}>
+  | <{λ t}> => <{λ `shift_indices n t`}>
+  | <{t1 t2}> => <{`shift_indices n t1` `shift_indices n t2`}>
   end.
 
 Search (nat -> nat -> bool).
 
-Reserved Notation "t '[' n ':=' s ']'" (in custom term at level 99, s at level 99).
-
-Fixpoint subst (n : nat) (s : term) (t : term) : term :=
+Fixpoint subst_aux (n : nat) (s : term) (t : term) : term :=
   match t with 
   | <{#v}> => 
       if (n =? v)%nat 
@@ -53,16 +51,19 @@ Fixpoint subst (n : nat) (s : term) (t : term) : term :=
       else if (v <? n) 
             then <{#v}>
             else <{#`v - 1`}>
-  | <{λ t}> => <{λ `subst (n+1) (incr_indices 1 s) t`}>
-  | <{t1 t2}> => <{t1[n := s] t2[n:=s]}>
-  end
-  where "t '[' n ':=' s ']'" := (subst n s t) (in custom term at level 99, s at level 99).
+  | <{λ t}> => <{λ `subst_aux (n+1) (shift_indices 1 s) t`}>
+  | <{t1 t2}> => <{`subst_aux n s t1` `subst_aux n s t2`}>
+  end.
+
+  Definition subst (s : term) (t : term) : term := subst_aux 0 s t.
 
 
+Notation "t '[' s ']'" := (subst s t) (in custom term at level 1, s at level 99, no associativity).
 
 Check <{ λ λ ((λ #2 #1 #0) (λ #0))  }>.
 
-Eval simpl in <{(λ λ (#2 #1 #0 [0 := λ #0]))}>.
+Check  <{(λ λ ((#2 #1 #0) [λ #0]))}>.
+Eval compute in <{(λ λ ((#2 #1 #0)[λ #0]))}>.
 
 
 

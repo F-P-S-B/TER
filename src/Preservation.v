@@ -12,32 +12,61 @@ Require Maps.
 Import Maps.Notations.
 
 
-
-
-
-Theorem preservation : ∀ Σ e e' t,
+Theorem preservation : 
+  ∀ e Σ e' t,
   has_type Σ empty e t  ->
   e --> e'  ->
   has_type Σ empty e' t.
-Proof.
-  intros * H_type_e. 
-  generalize dependent e'.
-  remember empty as Γ.
-  induction H_type_e;
-  intros e' H_step.
-  21: {
-    (* e = E_Match e' e_left e_right *)
-    inversion H_step; subst; 
-    inversion H_type_e1; subst;
-      eauto with local_hints.
-  }
-  all :
-  try (
-    inversion H_step; 
-    subst; 
-    try inversion H_type_e; subst;
-    (* try inversion H_type_e1; subst; *)
-    try inversion H_type_e2; subst;
-    eauto with local_hints; fail
+Proof with eauto 3 with local_hints.
+  intro e.
+  pose (
+    P (e: expr) :=
+      ∀ Σ e' t,
+        has_type Σ empty e t  ->
+        e --> e'  ->
+        has_type Σ empty e' t
   ).
+  pose (
+    P0 (branches: lsexpr) :=
+      ∀ name_sum Σ branches' t,
+        has_type_lsexpr name_sum Σ empty branches t  ->
+        branches -->ₗ branches'  ->
+        has_type_lsexpr name_sum Σ empty branches' t
+  ).
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
+  clear P P0;
+  try (intros * IH1 * IH2 * IH3 * H_type H_step);
+  try (intros * IH1 * IH2 * H_type H_step);
+  try (intros * IH * H_type H_step);
+  try (intros * H_type H_step);
+  try (inversion H_step; fail);
+  try (inversion H_step; subst;
+    inversion H_type; subst; eauto 3 with local_hints; fail).
+  - inversion H_step; subst;
+    inversion H_type; subst; 
+    try (eapply T_App; eauto with local_hints; fail).
+    inversion H7; subst.
+    eapply Subst.preserves_typing...
+  - inversion H_step; subst;
+    inversion H_type; subst...
+    inversion H4...
+  - inversion H_step; subst;
+    inversion H_type; subst...
+    inversion H4...
+  - inversion H_step; subst.
+    + inversion H_type; subst.
+      apply T_Fix...
+    + inversion H_type; subst.
+      inversion H3; subst...
+  - inversion H_step; subst;
+    inversion H_type; subst...
+    all: inversion H7... 
+  - inversion H_step; subst;
+    inversion H_type; subst...
+    (* TODO: 
+      Lemme sur le type des branches:
+      t_a -> t 
+      avec t_a le type associé au constructeur
+      
+    *)
 Qed.
