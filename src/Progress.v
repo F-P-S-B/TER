@@ -16,14 +16,14 @@ Import Maps.Notations.
 
 Theorem expr_progress : ∀ e Σ t,
   has_type Σ empty e t -> 
-  value e \/ ∃ e', e --> e'.
+  blocking_expr e \/ ∃ e', e --> e'.
 Proof with eauto with local_hints.
   intro e.
   pose (
     P (e: expr) :=
       ∀ Σ t,
         has_type Σ empty e t -> 
-        value e \/ ∃ e', e --> e'
+        blocking_expr e \/ ∃ e', e --> e'
   ).
   pose (
     P0 (branches: lsexpr) :=

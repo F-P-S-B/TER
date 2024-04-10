@@ -11,6 +11,56 @@ Require Import Canonical_form.
 Require Maps.
 Import Maps.Notations.
 
+Lemma test1 : 
+  ∀ Σ Γ constr v branches t s e,
+  has_type Σ Γ (E_Sum_Match (E_Sum_Constr constr v) (LSE_Cons s e branches)) t -> 
+  s ≠ constr -> 
+  has_type Σ Γ (E_Sum_Match (E_Sum_Constr constr v) branches) t.
+Proof. 
+  Admitted.
+
+
+Lemma test : 
+  ∀ Σ Γ constr v branches t b,
+  has_type Σ Γ (E_Sum_Match (E_Sum_Constr constr v) branches) t ->
+  lookup_constr constr branches = Some b ->
+  ∃ t_arg, 
+      has_type Σ Γ v t_arg 
+   /\ has_type Σ Γ b {{t_arg -> t}}.
+Proof.
+  intros.
+  induction branches.
+  - inversion H0.
+  - simpl in H0.
+    destruct (String.eqb_spec constr s); subst.
+    + admit.
+    + inversion H; subst. 
+  Admitted.
+  
+
+
+
+
+(* Lemma test: 
+  ∀ name_sum constr Σ Γ branches b t t_arg, 
+  lookup_type_sum constr Σ = Some (name_sum, t_arg) ->
+  lookup_constr constr branches = Some b ->
+  has_type_lsexpr name_sum Σ Γ branches t ->
+  has_type Σ Γ b {{t_arg -> t}}
+.
+Proof with eauto with local_hints.
+  intros.
+  induction branches.
+  - inversion H0.
+  - simpl in H0.
+    destruct (String.eqb_spec constr s); subst.
+    + inversion H0; subst.
+      inversion H1; subst. 
+      rewrite H in H10.
+      inversion H10; subst...
+    + inversion H1; subst. 
+      apply IHbranches...
+Qed. *)
 
 Theorem preservation : 
   ∀ e Σ e' t,
@@ -62,7 +112,9 @@ Proof with eauto 3 with local_hints.
     inversion H_type; subst...
     all: inversion H7... 
   - inversion H_step; subst;
-    inversion H_type; subst...
+    inversion H_type; subst... 
+    Check test.
+    eapply test in H_type as [t_arg [H_t_v H_t_b]]...
     (* TODO: 
       Lemme sur le type des branches:
       t_a -> t 

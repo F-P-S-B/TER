@@ -7,6 +7,8 @@ Require Import String.
 Require Import List.
 Import ListNotations.
 
+
+
 Definition context := @Maps.map type.
 Definition empty := @Maps.empty type.
 Definition sum_types_constructors : Set := 
@@ -34,6 +36,7 @@ Fixpoint lookup_type_sum (constr : string) (Σ : sum_types_constructors)
         end
     end.
 
+
 (* Fixpoint expected_parameter 
   (constrs : list (type * string)) 
   (branches : list (string * expr)) : (list (string * expr * option type)) :=
@@ -45,7 +48,6 @@ Fixpoint lookup_type_sum (constr : string) (Σ : sum_types_constructors)
     let t := lookup_type_constrs name constrs in 
     (name, e, t)::(expected_parameter constrs branches')
   end. *)
-
 
 Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop := 
   (* Base λ-calculus *)
@@ -170,10 +172,9 @@ Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop :
     has_type_lsexpr name_sum Σ Γ branches t ->
     has_type Σ Γ (E_Sum_Match e branches) t
 
-
-  (* | T_Exception :
+  | T_Exception :
       ∀ Σ Γ e t,
-      has_type Σ Γ (E_Exception e) t *)
+      has_type Σ Γ (E_Exception e) t
 with has_type_lsexpr : string -> sum_types_constructors -> context -> lsexpr -> type -> Prop :=
     | T_LSExpr_Nil :
         ∀ 

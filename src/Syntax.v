@@ -100,7 +100,7 @@ Inductive expr :=
     Pour step les exception: faire 
   *)
 
-  (* | E_Exception (e: exception) *)
+  | E_Exception (e: exception)
   with 
     lsexpr :=
     | LSE_Nil : lsexpr
@@ -222,9 +222,13 @@ with value_lsexpr : lsexpr -> Prop :=
 
 
 Inductive blocking_expr : expr -> Prop := 
-  (* | BE_Exc : ∀ e : exception, blocking_expr (E_Exception e) *)
+  | BE_Exc : ∀ e : exception, blocking_expr (E_Exception e)
   | BE_Val : ∀ e : expr, value e -> blocking_expr e
 .
+
+Inductive blocking_lsexpr : lsexpr -> Prop :=
+  | BLSE_Val : ∀ branches, value_lsexpr branches -> blocking_lsexpr branches
+  .
 
 Hint Constructors type : local_hints.
 Hint Constructors expr : local_hints.
@@ -277,6 +281,7 @@ Notation "<{ e }>" := e
   ).
 Notation "( e )" := e (in custom expr, e at level 99).
 (* Notation "{ e }" := e (in custom expr, e at level 99). *)
+Notation " '`' x '`' " := x (in custom expr at level 0, x constr at level 0).
 Notation "x" := x (in custom expr at level 0, x constr at level 0).
 Notation "x y" := 
   (E_App x y) (in custom expr at level 1, left associativity).

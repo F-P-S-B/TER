@@ -134,7 +134,8 @@ Inductive substitution (s : expr) (x : string) : expr -> expr -> Prop :=
         (E_Sum_Match e branches) 
         (E_Sum_Match e' branches')
   
-  (* | S_Expr : ∀ exc, substitution s x (E_Exception exc) (E_Exception exc) *)
+  | S_Exc : 
+      ∀ exc, substitution s x (E_Exception exc) (E_Exception exc)
 
 with substitution_lsexpr (s : expr) (x : string) : lsexpr -> lsexpr -> Prop :=
   | S_LSExpr_Nil : substitution_lsexpr s x LSE_Nil LSE_Nil
@@ -211,7 +212,7 @@ Proof.
         branches'₁ = branches'₂
   ).
 
-  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0;
   try (
     intros * H_s_1 H_s_2; inversion H_s_1; inversion H_s_2; subst;
     eauto with local_hints;
@@ -249,7 +250,10 @@ Proof.
     try (eapply IH3; eauto with local_hints; fail);
     fail
   ).
+  intros * H_s_1 H_s_2.
+  inversion H_s_1. inversion H_s_2; subst. destruct exc. destruct exc0. reflexivity.
 Qed.
+
 
 Local Theorem preserves_typing : 
   ∀ e Γ Σ s x e' t_e t_s, 

@@ -27,6 +27,14 @@ Inductive step : expr -> expr -> Prop :=
       value v1 ->
       e2 --> e2' ->
       (E_App v1 e2) --> (E_App v1 e2')
+  | ST_App_Exn_Left :
+      ∀ (exn : exception) (e : expr),
+      E_App (E_Exception exn) e --> (E_Exception exn)
+  | ST_App_Exn_Right :
+      ∀ (exn : exception) (v : expr),
+      value v ->
+      E_App v (E_Exception exn) --> E_App v (E_Exception exn)
+
   | ST_If_True : 
       ∀ (e1 e2 : expr),
       (E_If E_True e1 e2) --> e1
@@ -37,6 +45,11 @@ Inductive step : expr -> expr -> Prop :=
       ∀ (e1 e1' e2 e3 : expr),
       e1 --> e1' ->
       (E_If e1 e2 e3) --> (E_If e1' e2 e3)
+  | ST_If_Exn :
+    ∀ (exn : exception) (e_true e_false : expr),
+    <{if `E_Exception exn` then e_true else e_false}> --> (E_Exception exn)
+
+
   | ST_Let_Left : 
       ∀ (x : string) (e1 e1' e2 : expr),
       e1 --> e1' ->
@@ -46,6 +59,11 @@ Inductive step : expr -> expr -> Prop :=
       value v1 ->
       substitution v1 x e2 e2' ->
       (E_Let x v1 e2) --> e2'
+  | ST_Let_Exn  :
+      ∀ (x : string) (exn : exception) (e : expr),
+      <{let x = `E_Exception exn` in e}> --> E_Exception exn
+
+      
   | ST_Minus_Left :  
       ∀ (e1 e1' e2 : expr),
       e1 --> e1' ->
@@ -58,6 +76,13 @@ Inductive step : expr -> expr -> Prop :=
   | ST_Minus_Num : 
       ∀ (z1 z2 : Z),
       (E_Minus (E_Num z1) (E_Num z2)) --> (E_Num (z1 - z2))
+  | ST_Minus_Left_Exn :
+      ∀ (exn : exception) (e : expr),
+      <{ `E_Exception exn` - e }> --> E_Exception exn 
+  | ST_Minus_Right_Exn :
+      ∀ (exn : exception) (v : expr),
+      value v ->
+      <{ v - `E_Exception exn` }> --> E_Exception exn
 
   | ST_Eq_Left :  
       ∀ (e1 e1' e2 : expr),
@@ -75,7 +100,13 @@ Inductive step : expr -> expr -> Prop :=
       ∀ (z1 z2 : Z),
       z1 <> z2 ->
       (E_Eq (E_Num z1) (E_Num z2)) --> (E_False)
-
+  | ST_Eq_Left_Exn :
+      ∀ (exn : exception) (e : expr),
+      <{ `E_Exception exn` == e }> --> E_Exception exn 
+  | ST_Eq_Right_Exn :
+      ∀ (exn : exception) (v : expr),
+      value v ->
+      <{ v == `E_Exception exn` }> --> E_Exception exn
 
   | ST_Pair_Left :  
       ∀ (e1 e1' e2 : expr),
@@ -86,35 +117,51 @@ Inductive step : expr -> expr -> Prop :=
       value v1 ->
       e2 --> e2' ->
       (E_Pair v1 e2) --> (E_Pair v1 e2')
+  | ST_Pair_Left_Exn :
+      ∀ (exn : exception) (e : expr),
+      <{ (`E_Exception exn`, e) }> --> E_Exception exn 
+  | ST_Pair_Right_Exn :
+      ∀ (exn : exception) (v : expr),
+      value v ->
+      <{ (v, `E_Exception exn`) }> --> E_Exception exn
+
+
   | ST_First :  
       ∀ (e e' : expr),
       e --> e' ->
       (E_First e) --> (E_First e')
-  | ST_Second :  
-      ∀ (e e' : expr),
-      e --> e' ->
-      (E_Second e) --> (E_Second e')
   | ST_First_Pair :  
       ∀ (v₁ v₂ : expr),
       value v₁ -> 
       value v₂ ->
       (E_First (E_Pair v₁ v₂)) --> v₁
+  | ST_First_Exn :
+      ∀ (exn : exception),
+      <{first `E_Exception exn`}> --> E_Exception exn
+
+  | ST_Second :  
+      ∀ (e e' : expr),
+      e --> e' ->
+      (E_Second e) --> (E_Second e')
   | ST_Second_Pair :  
       ∀ (v₁ v₂ : expr),
       value v₁ -> 
       value v₂ ->
       (E_Second (E_Pair v₁ v₂)) --> v₂
-  
+  | ST_Second_Exn :
+      ∀ (exn : exception),
+      <{second `E_Exception exn`}> --> E_Exception exn
+
   | ST_Record_Tail : 
       ∀ x e tail tail', 
-      value e -> 
+      blocking_expr e -> 
       tail --> tail' -> 
       (E_Record_Cons x e tail) --> (E_Record_Cons x e tail')
   
   | ST_Record_Cons : 
       ∀ x e e' tail,
       e --> e' -> 
-      (E_Record_Cons x e tail) --> (E_Record_Cons x e' tail)
+      (E_Record_Cons x e tail) --> (E_Record_Cons x e' tail)      
   
   | ST_Access : 
       ∀ x e e',
@@ -122,10 +169,10 @@ Inductive step : expr -> expr -> Prop :=
       (E_Record_Access e x) --> (E_Record_Access e' x)
 
   | ST_Access_Value : 
-      ∀ x e v,
-      value e -> 
-      lookup_val_record x e = Some v ->
-      (E_Record_Access e x) --> v
+      ∀ x e e',
+      blocking_expr e -> 
+      lookup_val_record x e = Some e' ->
+      (E_Record_Access e x) --> e'
 
   | ST_Fix :
       ∀ (e e': expr),
@@ -136,6 +183,9 @@ Inductive step : expr -> expr -> Prop :=
       ∀ x t e e',
       substitution (E_Fix (E_Fun x t e)) x e e' ->
       (E_Fix (E_Fun x t e)) --> e'
+  | ST_Fix_Exn :
+      ∀ (exn : exception) (e : expr),
+      <{fix `E_Exception exn`}> --> E_Exception exn
 
   | ST_In_Left :
       ∀ t₁ t₂ e e', 
@@ -184,12 +234,17 @@ Inductive step : expr -> expr -> Prop :=
       ∀ constr e e',
       e --> e' -> 
       E_Sum_Constr constr e --> E_Sum_Constr constr e'
+  | ST_Sum_Constr_Exn :
+      ∀ constr exn,
+      E_Sum_Constr constr (E_Exception exn) --> E_Exception exn
 
   | ST_Sum_Match_Main : 
       ∀ e e' branches, 
       e --> e' -> 
       (E_Sum_Match e branches) --> (E_Sum_Match e' branches)
-  
+  | ST_Sum_Match_Main_Exn : 
+      ∀ exn branches, 
+      (E_Sum_Match (E_Exception exn) branches) --> E_Exception exn
   | ST_Sum_Match :
       ∀ v branches branches', 
       value v -> 
@@ -206,6 +261,16 @@ Inductive step : expr -> expr -> Prop :=
         branches
       ) 
       --> <{b v}>
+  | ST_Sum_Match_Apply_Not_Found :
+      ∀ constr v branches b, 
+      value v -> 
+      value_lsexpr branches ->
+      lookup_constr constr branches = None ->
+      (E_Sum_Match 
+        (E_Sum_Constr constr v)
+        branches
+      ) 
+      --> E_Exception Ex_Unhandled_Case
 
 where
     "x --> y" := (step x y)
@@ -218,10 +283,10 @@ with step_lsexpr : lsexpr -> lsexpr -> Prop :=
         (LSE_Cons constr e branches) 
         (LSE_Cons constr e' branches)
   | ST_LSExpr_Tail :
-    ∀ constr v branches branches',
-    value v -> 
-    branches -->ₗ branches' ->
-    (LSE_Cons constr v branches) -->ₗ (LSE_Cons constr v branches') 
+      ∀ constr v branches branches',
+      blocking_expr v -> 
+      branches -->ₗ branches' ->
+      (LSE_Cons constr v branches) -->ₗ (LSE_Cons constr v branches') 
 where 
     "x -->ₗ y" := (step_lsexpr x y)
 .
