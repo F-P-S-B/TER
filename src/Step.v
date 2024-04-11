@@ -13,9 +13,10 @@ Reserved Notation "x --> y" (at level 70, no associativity).
 Reserved Notation "x -->ₗ y" (at level 70, no associativity).
 Inductive step : expr -> expr -> Prop := 
   | ST_App_Fun : 
-        ∀ (x : string) (t : type) (e v : expr),
+        ∀ (x : string) (t : type) (e e' v : expr),
         value v -> 
-        <{(fun x : t => e) v}> --> sub v x e
+        substitution v x e e' ->
+        <{(fun x : t => e) v}> --> e'
 
   | ST_App_Left : 
       ∀ (e₁ e₁' e₂ : expr),
@@ -48,9 +49,10 @@ Inductive step : expr -> expr -> Prop :=
       <{let x = e₁ in e₂}>  -->  <{let x = e₁' in e₂}> 
 
   | ST_Let_Right : 
-      ∀ (x : string) (v e : expr),
+      ∀ (x : string) (v e e' : expr),
       value v ->
-      <{ let x = v in e }> --> sub v x e
+      substitution v x e e' ->
+      <{ let x = v in e }> --> e'
 
   
   | ST_Minus_Left :  
@@ -147,8 +149,9 @@ Inductive step : expr -> expr -> Prop :=
       <{ fix e }> --> <{ fix e' }>
   
   | ST_Fix_Fun :
-      ∀ (x : string) (t : type) (e : expr),
-      <{ fix (fun x : t => e) }> --> sub <{ fix (fun x : t => e)}> x e
+      ∀ (x : string) (t : type) (e e': expr),
+      substitution <{ fix (fun x : t => e)}> x e e' ->
+      <{ fix (fun x : t => e) }> --> e'
   
 
   | ST_In_Left :
@@ -373,7 +376,7 @@ Proof with eauto with local_hints.
     intros * IH1 * IH2 * H_st1 H_st2;
     inversion H_st1; subst;
     inversion H_st2; subst;
-    try (simpl in *; eauto with local_hints; fail);
+    try (eapply Subst.deterministic; eauto with local_hints; fail);
     try (f_equal; eauto with local_hints; fail);
     try (exfalso; eapply not_value; eauto with local_hints; fail);
     fail
@@ -381,8 +384,9 @@ Proof with eauto with local_hints.
   - intros * IH1 * IH2 * H_st1 H_st2.
     inversion H_st1; subst.
     + inversion H_st2; subst...
-      inversion H3.
-      exfalso; eapply not_value with (e:=e2)...
+      * eapply Subst.deterministic...
+      * inversion H4.
+      * exfalso; eapply not_value with (e:=e2)...
     + inversion H_st1; subst; 
       try (
         inversion H_st2; subst;try (simpl in *; eauto with local_hints; fail); 
@@ -406,10 +410,10 @@ Proof with eauto with local_hints.
     inversion H_st1; subst.
     + inversion H_st2; subst.
       * f_equal...
-      * exfalso; eapply not_value; eauto with local_hints.
+      * exfalso; eapply not_value...
       * inversion H2.
     + inversion H_st2; subst.
-      * exfalso; eapply not_value; eauto with local_hints.
+      * exfalso; eapply not_value...
       * f_equal...
       * inversion H3.
     + inversion H_st2; subst...
@@ -419,11 +423,11 @@ Proof with eauto with local_hints.
     inversion H_st1; subst.
     + inversion H_st2; subst.
       * f_equal...
-      * exfalso; eapply not_value; eauto with local_hints.
+      * exfalso; eapply not_value...
       * inversion H2.
       * inversion H2.
     + inversion H_st2; subst.
-      * exfalso; eapply not_value; eauto with local_hints.
+      * exfalso; eapply not_value...
       * f_equal...
       * inversion H3.
       * inversion H3.
@@ -440,21 +444,21 @@ Proof with eauto with local_hints.
     inversion H_st2; subst;
     try (f_equal; eauto with local_hints).
     + inversion H0; subst.
-      * exfalso; eapply not_value with (e:=e'₂); eauto with local_hints.
-      * exfalso; eapply not_value with (e:=v₂); eauto with local_hints.
+      * exfalso; eapply not_value with (e:=e'₂)...
+      * exfalso; eapply not_value with (e:=v₂)...
     + inversion H2; subst.
-      * exfalso; eapply not_value with (e:=e'₁); eauto with local_hints.
-      * exfalso; eapply not_value with (e:=v₂); eauto with local_hints. 
+      * exfalso; eapply not_value with (e:=e'₁)...
+      * exfalso; eapply not_value with (e:=v₂)... 
   - intros * IH * H_st1 H_st2.
     inversion H_st1; subst;
     inversion H_st2; subst;
     try (f_equal; eauto with local_hints).
     + inversion H0; subst.
-      * exfalso; eapply not_value with (e:=v₁); eauto with local_hints.
-      * exfalso; eapply not_value with (e:=e'₂); eauto with local_hints.
+      * exfalso; eapply not_value with (e:=v₁)...
+      * exfalso; eapply not_value with (e:=e'₂)...
     + inversion H2; subst.
-      * exfalso; eapply not_value with (e:=v₁); eauto with local_hints.
-      * exfalso; eapply not_value with (e:=e'₁); eauto with local_hints. 
+      * exfalso; eapply not_value with (e:=v₁)...
+      * exfalso; eapply not_value with (e:=e'₁)... 
   - intros * IH * H_st1 H_st2.
     inversion H_st1;
     inversion H_st2; subst.
@@ -467,29 +471,30 @@ Proof with eauto with local_hints.
     inversion H_st2; subst;
     try (f_equal; eauto with local_hints).
     + inversion H0.
-    + inversion H0.
+    + inversion H1.
+    + eapply Subst.deterministic... 
   - intros * IH1 * IH2 * IH3 * H_st1 H_st2.
     inversion H_st1; subst.
     + inversion H_st2; subst.
       * f_equal...  
-      * exfalso; eapply not_value; eauto with local_hints.
-      * exfalso; eapply not_value with (e:= e0); eauto with local_hints.
+      * exfalso; eapply not_value...
+      * exfalso; eapply not_value with (e:= e0)...
       * inversion H3; subst. 
-        exfalso; eapply not_value with (e:= v); eauto with local_hints.
+        exfalso; eapply not_value with (e:= v)...
       * inversion H3; subst. 
-        exfalso; eapply not_value with (e:= v); eauto with local_hints.
+        exfalso; eapply not_value with (e:= v)...
     + inversion H_st2; subst.
-      * exfalso; eapply not_value; eauto with local_hints.
+      * exfalso; eapply not_value...
       * f_equal...
-      * exfalso; eapply not_value; eauto with local_hints.
-      * exfalso; eapply not_value with (e:=case_left); eauto with local_hints.
-      * exfalso; eapply not_value with (e:=case_left); eauto with local_hints.
+      * exfalso; eapply not_value...
+      * exfalso; eapply not_value with (e:=case_left)...
+      * exfalso; eapply not_value with (e:=case_left)...
     + inversion H_st2; subst.
-      * exfalso; eapply not_value with (e := e0); eauto with local_hints.
-      * exfalso; eapply not_value with (e := case_left); eauto with local_hints.
+      * exfalso; eapply not_value with (e := e0)...
+      * exfalso; eapply not_value with (e := case_left)...
       * f_equal...
-      * exfalso; eapply not_value; eauto with local_hints.
-      * exfalso; eapply not_value; eauto with local_hints.
+      * exfalso; eapply not_value...
+      * exfalso; eapply not_value...
     + inversion H_st2; subst...
       * inversion H6; subst. 
         exfalso; eapply not_value with (e := v)...

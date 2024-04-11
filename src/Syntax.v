@@ -173,9 +173,9 @@ Hint Constructors lsexpr : local_hints.
 Hint Constructors value : local_hints.
 Hint Constructors value_lsexpr : local_hints.
 
-Definition x := "x"%string.
-Definition y := "y"%string.
-Definition z := "z"%string.
+Local Definition x := "x"%string.
+Local Definition y := "y"%string.
+Local Definition z := "z"%string.
 
 Declare Custom Entry expr_ty.
 

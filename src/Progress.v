@@ -47,6 +47,9 @@ Proof with eauto with local_hints.
     apply IH2 in H3 as [H_val_e2 | [e2' H_step_e2]]...
     inversion H_type; subst.
     apply Canonical_form.t_fun in H5 as [x [e1' H_eq]]; subst...
+    Check Subst.exists_one.
+    apply Closed.typed_empty in H3.
+    apply (Subst.exists_one e1' e2 x) in H3 as [eₛ H_subst]...
   
   - intros * IH1 * IH2 * IH3 * H_type. right.
     inversion H_type; subst.
@@ -56,7 +59,10 @@ Proof with eauto with local_hints.
     
   - intros * IH1 * IH2 * H_type. right.
     inversion H_type; subst.
+    assert (H_type_e1 := H5).
     apply IH1 in H5 as [H_val_e1 | [e1' H_step_e1]]...
+    apply Closed.typed_empty in H_type_e1.
+    apply (Subst.exists_one e2 e1 x) in H_type_e1 as [eₛ H_subst]...
 
   - intros * IH1 * IH2 * H_type. right.
     inversion H_type; subst.
@@ -115,6 +121,9 @@ Proof with eauto with local_hints.
     assert (H_type_e := H2).
     apply IH1 in H2 as [H_val_e | [e' H_step_e]]...
     apply Canonical_form.t_fun in H_type_e as [x [e1' H_eq]]; subst...
+    inversion H_type; subst.
+    apply Closed.typed_empty in H_type.
+    eapply (Subst.exists_one _ _ _) in H_type as [eₛ H_subst]...
 
   - intros * IH1 * H_type.
     inversion H_type; subst.
