@@ -59,23 +59,8 @@ Proof.
 Qed. 
 Hint Resolve t_pair : local_hints.
 
-(* TODO: Voir si on aura besoin de lemmes équivalents *)
 
-Local Lemma t_record :
-    ∀ Σ Γ (t : lstype) (e : expr),
-    Σ / Γ |- e : {{ {t} }} ->
-    value e -> 
-    ∃ (rec : lsexpr), 
-        e = <{ {rec} }> 
-    /\  Σ / Γ |-ᵣ rec : t.
-Proof.
-  intros * H_type H_val.
-  inversion H_val; subst; try (inversion H_type; fail).
-  inversion H_type; subst.
-  eauto.
-Qed.
-
-(* Local Lemma t_record_nil :
+Local Lemma t_record_nil :
     ∀ Γ Σ e,
     has_type Σ Γ  e  (Type_Record_Nil) ->  
     value e ->
@@ -86,10 +71,10 @@ Proof.
     reflexivity.
 Qed. 
 
-Hint Resolve t_record_nil : local_hints. *)
+Hint Resolve t_record_nil : local_hints.
 
 
-(* Local Lemma t_record_cons :
+Local Lemma t_record_cons :
     ∀ Γ Σ e x t_x t_tail,
     has_type Σ Γ  e  (Type_Record_Cons x t_x t_tail) ->  
     value e ->
@@ -100,46 +85,74 @@ Proof.
     eauto.
 Qed. 
 
-Hint Resolve t_record_cons : local_hints. *)
+Hint Resolve t_record_cons : local_hints.
 
 
-Local Lemma record_type_lookup :
+Local Lemma record_type_exists :
   ∀ Γ Σ e t_rec t x, 
-  Σ / Γ |-ᵣ e : t_rec -> 
-  lookup_lstype x t_rec = Some t -> 
-  ∃ e', lookup_lsexpr x e = Some e'.
-Proof with eauto with local_hints.
+  value e ->
+  has_type Σ Γ  e  t_rec -> 
+  lookup_type_record x t_rec = Some t -> 
+  ∃ e', lookup_val_record x e = Some e'.
+Proof.
   intros Γ Σ e t_rec.
   generalize dependent Γ.
   generalize dependent e.
-  induction t_rec.
-  - intros * H_type H_lookup. inversion H_lookup.
-  - intros * H_type H_lookup.
-    inversion H_type; subst.
-    simpl in *.
-    destruct (String.eqb x x0)...
+  induction t_rec; intros;
+  try (inversion H1; fail).
+  simpl in H1. 
+  assert (H2 := H0). 
+  apply t_record_cons in H0 as [e' [e_tail H_eq]];
+  subst; eauto. 
+  simpl.
+  destruct (String.eqb_spec x0 x); subst; eauto.
+  inversion H; subst.
+  inversion H2; subst.
+  eapply IHt_rec2; eauto.
 Qed.
 
-Hint Resolve record_type_lookup : local_hints.
+Hint Resolve record_type_exists : local_hints.
 
 
-Lemma record_val_lookup :
-  ∀ Γ Σ e t_rec e' x, 
-  Σ / Γ |-ᵣ e : t_rec -> 
-  lookup_lsexpr x e = Some e' ->
-  ∃ t, lookup_lstype x t_rec = Some t.
-Proof with eauto with local_hints.
-  intros Γ Σ e.
-  generalize dependent Γ.
-  induction e.
-  - intros * H_type H_lookup. inversion H_lookup.
-  - intros * H_type H_lookup.
-    inversion H_type; subst.
-    simpl in *.
-    destruct (String.eqb s x) eqn:Heq...
+Lemma lookup_type_val :
+  ∀ Γ Σ x e e' t_e t_e',
+  has_type Σ Γ  e  t_e -> 
+  value e ->
+  lookup_type_record x t_e = Some t_e' ->
+  lookup_val_record x e = Some e' -> 
+  has_type Σ Γ  e'  t_e'. 
+Proof.
+  intros Γ Σ x e e' t_e.
+  generalize dependent Γ. 
+  generalize dependent x. 
+  generalize dependent e. 
+  generalize dependent e'.
+  induction t_e; intros; try (inversion H1; fail).
+  simpl in H0.
+  destruct (String.eqb_spec x x0).
+  - symmetry in e0. subst.
+    eapply t_record_cons in H0 as [e'' [e_tail' H_eq']]; 
+    eauto; subst.
+    inversion H; subst. 
+    simpl in H1, H2.
+    rewrite String.eqb_refl in *.
+    inversion H1. inversion H2.
+    subst. auto.    
+  - assert (H_val := H0).
+    eapply t_record_cons in H0 as [e'' [e_tail' H_eq']]; eauto.
+    subst.
+    inversion H_val; subst.
+    inversion H; subst.
+    eapply IHt_e2;
+    eauto;
+    simpl in *;
+    rewrite <- String.eqb_neq in n;
+    rewrite String.eqb_sym in n;
+    rewrite n in *;
+    eauto.
 Qed.
 
-Hint Resolve record_val_lookup : local_hints.
+Hint Resolve lookup_type_val : local_hints.
 
 
 Local Lemma t_in: 

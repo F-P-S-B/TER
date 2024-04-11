@@ -10,148 +10,38 @@ Import Maps.Notations.
 Require Import List.
 Import ListNotations.
 
-(* TODO: Branches des matchs *)
-Inductive is_free_in (x : string) : expr -> Prop :=
-  | Free_Var : is_free_in x <{x}>
-  | Free_App_Left : 
-      ∀ e₁ e₂, 
-      is_free_in x e₁ -> 
-      is_free_in x <{e₁ e₂}>
-  | Free_App_Right : 
-      ∀ e₁ e₂, 
-      is_free_in x e₂ -> 
-      is_free_in x <{e₁ e₂}>
-  | Free_Fun : 
-      ∀ y t e, 
-      y <> x -> 
-      is_free_in x e -> 
-      is_free_in x <{fun y : t => e}> 
-  | Free_If_Cond : 
-      ∀ e₁ e₂ e₃, 
-      is_free_in x e₁ -> 
-      is_free_in x <{if e₁ then e₂ else e₃}> 
-  | Free_If_Left : 
-      ∀ e₁ e₂ e₃, 
-      is_free_in x e₂ -> 
-      is_free_in x <{if e₁ then e₂ else e₃}> 
-  | Free_If_Right : 
-      ∀ e₁ e₂ e₃, 
-      is_free_in x e₃ -> 
-      is_free_in x <{if e₁ then e₂ else e₃}> 
-  | Free_Let_Left : 
-      ∀ y e₁ e₂, 
-      is_free_in x e₁ -> 
-      is_free_in x <{let y = e₁ in e₂}>
-  | Free_Let_Right : 
-      ∀ y e₁ e₂, 
-      y <> x -> is_free_in x e₂ -> 
-      is_free_in x <{let y = e₁ in e₂}>
-  | Free_Minus_Left : 
-      ∀ e₁ e₂, 
-      is_free_in x e₁ -> 
-      is_free_in x <{e₁ - e₂}>
-  | Free_Minus_Right : 
-      ∀ e₁ e₂, 
-      is_free_in x e₂ -> 
-      is_free_in x <{e₁ - e₂}>
 
-  | Free_Eq_Left : 
-      ∀ e₁ e₂, 
-      is_free_in x e₁ -> 
-      is_free_in x <{e₁ == e₂}>
-  | Free_Eq_Right : 
-      ∀ e₁ e₂, 
-      is_free_in x e₂ -> 
-      is_free_in x <{e₁ == e₂}>
-  | Free_Pair_Left : 
-      ∀ e₁ e₂, 
-      is_free_in x e₁ -> 
-      is_free_in x (E_Pair e₁ e₂) 
-  | Free_Pair_Right : 
-      ∀ e₁ e₂, 
-      is_free_in x e₂ -> 
-      is_free_in x (E_Pair e₁ e₂) 
-  | Free_First : 
-    ∀ e, 
-    is_free_in x e -> 
-    is_free_in x (E_First e)
-  | Free_Second : 
-    ∀ e, 
-    is_free_in x e -> 
-    is_free_in x (E_Second e)
+Fixpoint is_free_in (x : string) (e : expr) : Prop :=
+  match e with 
+  | <{#y}> => x = y
+  | <{e₁ e₂}> 
+  | <{e₁ - e₂}>  
+  | <{e₁ == e₂}>  
+  | <{(e₁, e₂)}>  => is_free_in x e₁ \/ is_free_in x e₂
+  | <{fun y : _ => e}> => ¬ (x = y) /\ is_free_in x e
+  | <{true}> | <{false}> | E_Num _ | <{ unit }> => False
+  | <{if e₁ then e₂ else e₃}> 
+  | <{match e₁ with | inl => e₂ | inr => e₃ end}> => is_free_in x e₁ \/ is_free_in x e₂ \/ is_free_in x e₃
+  | <{let y = e₁ in e₂}> => 
+      is_free_in x e₁ \/ ¬ (x = y) /\ is_free_in x e₂
+  | <{first e}> | <{second e}> 
+  | <{ e::_ }> | <{fix e}> 
+  | <{ inl < _ | _> e }> | <{ inr < _ | _> e }> 
+  | E_Sum_Constr _ e => is_free_in x e
+  | <{ { lse } }> => is_free_in_lsexpr x lse
+  | <{match_sum e with ls : default end_sum}> => 
+    is_free_in x e \/ is_free_in x default \/ is_free_in_lsexpr x ls
+  end
+with 
+  is_free_in_lsexpr (x : string) (lse : lsexpr) := 
+  match lse with 
+  | <{ nil }> => False
+  | <{ _ := e; tail }> => is_free_in x e \/ is_free_in_lsexpr x tail
+  end
+  .
 
-  | Free_Record_Cons_tail :
-    ∀ y e tail, 
-    is_free_in x tail -> 
-    is_free_in x (E_Record_Cons y e tail)
-  | Free_Record_Cons_head :
-    ∀ y e tail, 
-    is_free_in x e -> 
-    is_free_in x (E_Record_Cons y e tail)
-
-  | Free_Record_Access :
-    ∀ y e, 
-      is_free_in x e -> 
-      is_free_in x (E_Record_Access e y) 
-
-  | Free_Fix :  
-      ∀ e, 
-      is_free_in x e -> 
-      is_free_in x (E_Fix e) 
-
-  | Free_In_Left :
-      ∀ e t₁ t₂, 
-      is_free_in x e ->
-      is_free_in x (E_In_Left t₁ t₂ e)
-  
-  | Free_In_Right :
-      ∀ e t₁ t₂, 
-      is_free_in x e -> 
-      is_free_in x (E_In_Right t₁ t₂ e)
-
-  | Free_Match_Main :
-      ∀ e e_left e_right, 
-      is_free_in x e -> 
-      is_free_in x (E_Match e e_left e_right)
-
-  | Free_Match_Left :
-      ∀ e e_left e_right, 
-      is_free_in x e_left -> 
-      is_free_in x (E_Match e e_left e_right)
-  
-  | Free_Match_Right :
-      ∀ e e_left e_right, 
-      is_free_in x e_right -> 
-      is_free_in x (E_Match e e_left e_right)
-  | Free_Sum_Constr :
-      ∀ e constr, 
-      is_free_in x e -> 
-      is_free_in x (E_Sum_Constr constr e)
-  
-  | Free_Sum_Match_Base :
-    ∀ e branches, 
-    is_free_in x e -> 
-    is_free_in x (E_Sum_Match e branches)
-
-  | Free_Sum_Match_Rec_Branches :
-    ∀ e branches,
-    is_free_in_lsexpr x branches -> 
-    is_free_in x (E_Sum_Match e branches)
-
-
-with is_free_in_lsexpr  (x : string) : lsexpr -> Prop :=
-  | Free_LSExpr_Cons :
-    ∀ e constr tail,
-    is_free_in x e -> 
-    is_free_in_lsexpr x (LSE_Cons constr e tail)
-  | Free_LSExpr_Tail :
-    ∀ e constr tail,
-    is_free_in_lsexpr x tail -> 
-    is_free_in_lsexpr x (LSE_Cons constr e tail)
-.
-
-Hint Constructors is_free_in : local_hints.
-Hint Constructors is_free_in_lsexpr : local_hints.
+Hint Unfold is_free_in : local_hints.
+Hint Unfold is_free_in_lsexpr : local_hints.
 
 Definition closed e := ∀ x, ¬ is_free_in x e.
 Definition closed_lsexpr e := ∀ x, ¬ is_free_in_lsexpr x e.
@@ -163,46 +53,76 @@ Lemma free_has_type :
     ∀ e, ∀ Γ Σ t x,
     is_free_in x e ->
     has_type Σ Γ e t ->  
-    ∃ t_x, Γ ? x = Some t_x.
+    ∃ tₓ, Γ ? x = Some tₓ.
 Proof with eauto with local_hints.
   pose (
     P (e : expr) := 
       ∀ Γ Σ t x,
       is_free_in x e ->
       has_type Σ Γ e t ->  
-      ∃ t_x, Γ ? x = Some t_x
+      ∃ tₓ, Γ ? x = Some tₓ
   ). 
   pose (
     P0 (branches : lsexpr) :=
-      ∀ Γ Σ name_sum t x,
+      ∀ Σ Γ x,
         is_free_in_lsexpr x branches ->
-        has_type_lsexpr name_sum Σ Γ branches t ->  
-        ∃ t_x, Γ ? x = Some t_x
+        (
+          ∀ name_sum t,
+          Σ / Γ |-ₛ name_sum ~> branches : t ->  
+          ∃ tₓ, Γ ? x = Some tₓ
+        ) /\
+        (
+          ∀ t,
+          Σ / Γ |-ᵣ branches : t ->  
+          ∃ tₓ, Γ ? x = Some tₓ
+        )
   ).
-  intro.
-  apply expr_mut_ind with (P := P) (P0 := P0); 
-  unfold P; unfold P0; intros;
-  try (try inversion H; try inversion H0; try inversion H1; try inversion H2; try inversion H3; subst; eauto with local_hints; fail).
-  - inversion H0; 
-    inversion H1;
-    subst.
-    eapply H with (Σ := Σ) (Γ := (x |-> t; Γ)) in H6...
-    destruct H6 as [t_x Ht_x].
-    exists t_x.
+
+  intro e.
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0;
+  try (intros * IH1 * IH2 * IH3 * H_free H_type);
+  try (intros * IH1 * IH2 * H_free H_type);
+  try (intros * IH1 * IH2 * H_free; split; intros * H_type);
+  try (intros * IH1 *  H_free H_type);
+  try (intros * H_free H_type);
+  try (inversion H_free; try inversion H; inversion H_type; subst; eauto with local_hints; fail);
+  try (simpl in H_free; inversion H_type; eauto with local_hints; fail);
+  try (inversion H_free; inversion H_type; subst;
+    destruct (IH2 Σ Γ _ H); eauto with local_hints; fail
+    ).
+  - inversion H_free; inversion H_type; subst.
+    eapply IH1 with (Σ := Σ) (Γ := (x |-> t; Γ)) in H7...
+    destruct H7 as [tₓ Ht_x].
+    exists tₓ.
     rewrite <- Ht_x.
     rewrite Maps.update_neq...
-  - inversion H1; 
-    inversion H2;
+  - inversion H_free; 
+    inversion H_type;
     subst.
-    + eapply H with (Σ := Σ) (Γ := Γ) in H4...
-    + eapply H0 with (Σ := Σ) (Γ := (x |-> t1; Γ)) in H7...
-      destruct H7 as [t_x Ht_x].
-      exists t_x.
+    + eapply IH1 with (Σ := Σ) (Γ := Γ) in H6...
+    + destruct H. eapply IH2 with (Σ := Σ) (Γ := (x |-> t₁; Γ)) in H7...
+      destruct H7 as [tₓ Ht_x].
+      exists tₓ.
       rewrite <- Ht_x.
       rewrite Maps.update_neq...
-Qed.
+  - simpl in H_free; inversion H_type; subst.
+    destruct (IH1 Σ Γ _ H_free)...
+  - inversion H_free; inversion H_type; try inversion H; subst...
+    destruct (IH3 Σ Γ _ H9)...
+  - intros * H_free.
+    inversion H_free.
+  - inversion H_free; 
+    inversion H_type;
+    subst...
+    edestruct IH2 as [H' _]...
+  - inversion H_free; 
+    inversion H_type;
+    subst...
+    edestruct IH2 as [_ H']...
+Qed. 
 
 Hint Resolve free_has_type : local_hints.
+
 
 
 Theorem typed_empty :
@@ -218,72 +138,78 @@ Proof with eauto with local_hints.
   ).
   pose (
     P0 (branches : lsexpr) :=
-      ∀ name_sum Σ t,
-        has_type_lsexpr name_sum Σ empty branches t ->  
-        closed_lsexpr branches
+      ∀ Σ,
+        (
+          ∀ name_sum t,
+          Σ / empty |-ₛ name_sum ~> branches : t ->  
+          closed_lsexpr branches
+        ) /\ (
+          ∀ t,
+          Σ / empty |-ᵣ branches : t ->  
+          closed_lsexpr branches
+        ) 
   ).
   intro e.
   apply expr_mut_ind with (P := P) (P0 := P0);
-  unfold P; unfold P0; intros; intros x_contra H_contra;
-  try (inversion H_contra; fail).
-  - inversion H. inversion H3.
-  - inversion H1; subst. 
-    inversion H_contra; subst.
-    + eapply (H _ _ H8)...
-    + eapply (H0 _ _ H6)...
-  - inversion H_contra; inversion H0; subst.
+  unfold P; unfold P0; clear P P0;
+  try (
+    intros * IH1 * IH2 * H_type x_contra H_contra;
+    inversion H_contra; inversion H_type; subst;
+    try (eapply IH1; eauto with local_hints; fail);
+    try (eapply IH2; eauto with local_hints; fail);
+    fail
+  );
+  try (
+    intros * IH1 * IH2 * IH3 * H_type x_contra H_contra;
+    inversion H_type; subst;
+    inversion H_contra;
+    try (eapply IH1; eauto with local_hints; fail);
+    try inversion H;
+    try (eapply IH2; eauto with local_hints; fail);
+    try (eapply IH3; eauto with local_hints; fail);
+    fail
+  );
+  try (
+    intros * IH1 * H_type x_contra H_contra;
+    inversion H_type; subst;
+    simpl in H_contra;
+    eapply IH1; eauto with local_hints;
+    fail
+  )...
+  (* try (intros * IH1 * IH2 * IH3 * H_type);
+  try (intros * IH1 * IH2 * H_type);
+  try (intros * IH1 * IH2 *; split; intros * H_type);
+  try (intros * IH1 * H_type);
+  try (intros * H_type). *)
+  - intros * H_type x_contra H_contra. inversion H_type; subst. inversion H2.
+  - intros * IH1 * H_type x_contra H_contra.
     eapply free_has_type in H_contra as [t_x H_eq]...
     inversion H_eq.
-  - inversion H_contra; inversion H2; subst.
-    + eapply H in H4...        
-    + eapply H0 in H4...        
-    + eapply H1 in H4...
-  - inversion H_contra; inversion H1; subst.
-    + eapply (H _ _ H12)...
+  - intros * IH1 * IH2 * H_type x_contra H_contra.
+    inversion H_contra; inversion H_type; subst.
+    + eapply (IH1 _ _ H6)...
     + eapply free_has_type in H_contra as [t_x H_eq]...
       inversion H_eq.
-  - inversion H_contra; inversion H1; subst.
-    + eapply (H _ _ H9)...
-    + eapply (H0 _ _ H11)...
-  - inversion H_contra; inversion H1; subst.
-    + eapply (H _ _ H9)...
-    + eapply (H0 _ _ H11)...
-  - inversion H_contra; inversion H1; subst.
-    + eapply (H _ _ H9)...
-    + eapply (H0 _ _ H11)...
-  - inversion H_contra; inversion H0; subst.
-    eapply (H _ _ H6)...
-  - inversion H_contra; inversion H0; subst.
-    eapply (H _ _ H6)...
-  - inversion H_contra; inversion H1; subst.
-    + eapply (H0 _ _ H13)...
-    + eapply (H _ _ H11)...
-  - inversion H_contra; inversion H0; subst.
-    eapply (H _ _ H8)...
-  - inversion H_contra; inversion H0; subst.
-    eapply (H _ _ H6)...
-  - inversion H_contra; inversion H0; subst.
-    eapply (H _ _ H11)...
-  - inversion H_contra; inversion H0; subst.
-    eapply (H _ _ H11)...
-  - inversion H_contra; inversion H2; subst.
-    + eapply (H _ _ H12)...
-    + eapply (H0 _ _ H14)...
-    + eapply (H1 _ _ H15)...
-  - inversion H_contra; inversion H0; subst.
-    eapply (H _ _ H10)...
-  - inversion H_contra; inversion H1; subst.
-    + eapply (H _ _ H9)...
-    + apply H0 in H11.
-      eapply H11...
-  - inversion H_contra; inversion H1; subst.
-    + eapply (H _ _ H15)...
-    + apply H0 in H12. eapply H12... 
-Qed.
+  - intros * IH1 * IH2 * IH3 * H_type x_contra H_contra.
+    inversion H_contra; inversion H_type; subst.
+    + eapply IH1... 
+    + inversion H.
+      * eapply IH2... 
+      * destruct IH3 with (Σ := Σ) as [IH3' _]; eapply IH3'... 
+  - intros *; split; intros * H_type...
+  - intros * IH1 * IH2 *; split; intros * H_type x_contra H_contra;
+    inversion H_type;
+    destruct H_contra; subst;
+    try (eapply IH1; eauto with local_hints; fail)...
+    + destruct IH2 with (Σ := Σ) as [H _].
+      eapply H...
+    + destruct IH2 with (Σ := Σ) as [_ H].
+      eapply H...
+Qed. 
 
-  
-  
+
 Hint Resolve typed_empty : local_hints.
+
 
 
 Lemma closed_app : 
@@ -409,9 +335,9 @@ Hint Resolve closed_second : local_hints.
 
 
 Lemma closed_record : 
-  ∀ x e₁ e₂, 
-  closed (E_Record_Cons x e₁ e₂) -> 
-  closed e₁ /\ closed e₂.
+  ∀ x e tail, 
+  closed_lsexpr (LSE_Cons x e tail) -> 
+  closed e /\ closed_lsexpr tail.
 Proof.
   intros.
   unfold closed in *.
@@ -507,14 +433,14 @@ Qed.
 Hint Resolve closed_sum_constr : local_hints.
 
 Lemma closed_sum_match : 
-  ∀ e branches, 
-  closed (E_Sum_Match e branches) -> 
-  closed e /\ closed_lsexpr branches.
+  ∀ e default branches, 
+  closed (E_Sum_Match e default branches) -> 
+  closed e /\ closed default /\ closed_lsexpr branches.
 Proof.
   intros.
   unfold closed in *.
   unfold closed_lsexpr in *.
-  split;
+  repeat split;
     intros x H_contra;
     apply H with x;
     eauto with local_hints.

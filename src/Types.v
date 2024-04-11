@@ -1,18 +1,20 @@
 From Coq Require Import Unicode.Utf8.
-Require Import Hints.
-Require Maps.
-Import Maps.Notations.
-Require Import Syntax.
 Require Import String.
 Require Import List.
 Import ListNotations.
+Local Open Scope Z_scope.
+Require Import ZArith.
 
+Require Maps.
+Import Maps.Notations.
+Require Import Hints.
+Require Import Syntax.
 
-
-Definition context := @Maps.map type.
-Definition empty := @Maps.empty type.
+Definition context : Set := @Maps.map type.
+Definition empty : context := @Maps.empty type.
 Definition sum_types_constructors : Set := 
     list (string * list (type * string)).
+
 
 Fixpoint lookup_type_constrs (constr : string) (constrs : list (type * string)) : option type := 
     match constrs with 
@@ -37,200 +39,274 @@ Fixpoint lookup_type_sum (constr : string) (Σ : sum_types_constructors)
     end.
 
 
-(* Fixpoint expected_parameter 
-  (constrs : list (type * string)) 
-  (branches : list (string * expr)) : (list (string * expr * option type)) :=
-  match branches with 
-  | [] => []
-  | h::branches' => 
-    let name := fst h in 
-    let e := snd h in 
-    let t := lookup_type_constrs name constrs in 
-    (name, e, t)::(expected_parameter constrs branches')
-  end. *)
+(* Declare Custom Entry map. *)
+(* Notation "'[[' j ']]'" := j (j custom map at level 99). *)
+(* Notation "x" := x (in custom map at level 99, x constr). *)
+Reserved Notation "Σ '/'  Γ  '|-'  e  ':'  t" (
+    (* in custom type_jugement at level 0, *)
+    at level 0,
+    (* Γ custom map, *)
+    e custom expr
+). 
+
+Reserved Notation "Σ '/'  Γ  '|-ᵣ'  e  ':'  t" (
+    (* in custom type_jugement at level 0, *)
+    at level 0,
+    (* Γ custom map, *)
+    e custom expr
+). 
+
+
+Reserved Notation "Σ '/' Γ  |-ₛ name_sum ~> e : t" (
+    (* in custom type_jugement at level 0, *)
+    at level 0,
+    (* Γ custom map, *)
+    e custom expr
+). 
+
 
 Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop := 
-  (* Base λ-calculus *)
-  | T_Var: 
-      ∀ Γ Σ x t, 
+    (* Base λ-calculus *)
+    | T_Var : 
+      ∀ (Γ : context) (Σ : sum_types_constructors) (x : string) (t : type), 
       Γ ? x = Some t -> 
-      has_type Σ Γ (E_Var x) t 
-  | T_Fun: 
-      ∀ Γ Σ x t1 e (t2 : type),
-      has_type Σ (x |-> t1; Γ)  e  t2 -> 
-      has_type Σ Γ  (E_Fun x t1 e)  (Type_Fun t1 t2) 
+      Σ / Γ |- #x : t
 
-  | T_App: 
-      ∀ Γ Σ e1 e2 t1 t2, 
-      has_type Σ Γ  e2  t1 ->  
-      has_type Σ Γ  e1  (Type_Fun t1 t2) -> 
-      has_type Σ Γ  (E_App e1 e2)  t2 
+    | T_Fun : 
+      ∀ (Σ : sum_types_constructors) (Γ : context) 
+        (x : string) (e : expr) (t₁ t₂ : type),
+      Σ / (x |-> t₁ ; Γ) |- <{e}> : t₂ -> 
+      Σ / Γ |- fun x : t₁ => e : {{ t₁ -> t₂ }}
+    
+    | T_App :
+      ∀ (Σ : sum_types_constructors) (Γ : context)  
+        (e₁ e₂ : expr) (t₁ t₂ : type), 
+      Σ / Γ |- e₂ : t₁ ->  
+      Σ / Γ |- e₁ : {{ t₁ -> t₂ }} -> 
+      Σ / Γ |- <{ e₁ e₂ }> : t₂ 
 
   (* Booleans and conditions *)
   | T_True: 
-      ∀ Γ Σ, 
-      has_type Σ Γ  E_True  Type_Bool 
+      ∀ (Σ : sum_types_constructors) (Γ : context), 
+      Σ / Γ |- <{true}> : {{ Bool }} 
               
   | T_False: 
-      ∀ Γ Σ, 
-      has_type Σ Γ  E_False  Type_Bool 
+      ∀ (Σ : sum_types_constructors) (Γ : context), 
+      Σ / Γ |- <{false}> : {{ Bool }} 
 
   | T_If: 
-      ∀ Γ Σ e1 e2 e3 t, 
-      has_type Σ Γ  e1  Type_Bool ->  
-      has_type Σ Γ  e2  t ->  
-      has_type Σ Γ  e3  t ->  
-      has_type Σ Γ  (E_If e1 e2 e3)  t  
+      ∀ Γ Σ e₁ e₂ e₃ t, 
+      Σ / Γ |- e₁ : {{ Bool }} ->  
+      Σ / Γ |- e₂ : t ->  
+      Σ / Γ |- e₃ : t ->  
+      Σ / Γ |- <{ if e₁ then e₂ else e₃ }> : t 
 
   (* Let expressions *)
   | T_Let : 
-      ∀ Γ Σ x e1 e2 t1 t2, 
-      has_type Σ Γ  e1  t1 ->  
-      has_type Σ (x |-> t1; Γ)  e2  t2 ->  
-      has_type Σ Γ  (E_Let x e1 e2)  t2 
+      ∀ (Σ : sum_types_constructors) (Γ : context) 
+        (x : string) (e₁ e₂ : expr) (t₁ t₂ : type),
+      Σ / Γ |- e₁ : t₁ ->  
+      Σ / (x |-> t₁; Γ) |- e₂ : t₂ ->  
+      Σ / Γ |- <{let x = e₁ in e₂}> : t₂ 
 
   (* Arithmetic *)
   | T_Num : 
-      ∀ Γ Σ z, 
-      has_type Σ Γ  (E_Num z)  Type_Num  
+      ∀ (Σ : sum_types_constructors) (Γ : context) (z : Z), 
+      Σ / Γ |- <{ z }> : {{ Int }}  
 
   | T_Minus : 
-      ∀ Γ Σ e1 e2, 
-      has_type Σ Γ e1 Type_Num -> 
-      has_type Σ Γ e2 Type_Num -> 
-      has_type Σ Γ (E_Minus e1 e2)  Type_Num  
+      ∀ (Σ : sum_types_constructors) (Γ : context) (e₁ e₂ : expr), 
+      Σ / Γ |- e₁ : {{ Int }} -> 
+      Σ / Γ |- e₂ : {{ Int }} -> 
+      Σ / Γ |- e₁ - e₂ : {{ Int }}  
     
   | T_Eq :
-      ∀ Γ Σ e1 e2, 
-      has_type Σ Γ e1 Type_Num -> 
-      has_type Σ Γ e2 Type_Num -> 
-      has_type Σ Γ (E_Eq e1 e2)  Type_Bool  
+      ∀ (Σ : sum_types_constructors) (Γ : context) (e₁ e₂ : expr), 
+      Σ / Γ |- e₁ : {{ Int }} -> 
+      Σ / Γ |- e₂ : {{ Int }} -> 
+      Σ / Γ |- e₁ == e₂ : {{ Bool }}  
 
   (* Pairs *)
   | T_Pair :
-      ∀ Γ Σ e₁ e₂ t₁ t₂, 
-      has_type Σ Γ e₁ t₁ -> 
-      has_type Σ Γ e₂ t₂ -> 
-      has_type Σ Γ (E_Pair e₁ e₂)  (Type_Prod t₁ t₂)  
+      ∀ (Σ : sum_types_constructors) (Γ : context) 
+        (e₁ e₂ : expr) (t₁ t₂ : type),
+      Σ / Γ |- e₁ : t₁ -> 
+      Σ / Γ |- e₂ : t₂ -> 
+      Σ / Γ |- <{ ( e₁,  e₂ ) }> : {{t₁ * t₂}}  
   | T_First :
-      ∀ Γ Σ e t₁ t₂,
-      has_type Σ Γ  e  (Type_Prod t₁ t₂) -> 
-      has_type Σ Γ  (E_First e)  t₁ 
+      ∀ (Σ : sum_types_constructors) (Γ : context) 
+        (e : expr) (t₁ t₂ : type),
+      Σ / Γ |- e : {{ t₁ * t₂ }} -> 
+      Σ / Γ |- first e : t₁ 
   | T_Second :
-      ∀ Γ Σ e t₁ t₂,
-      has_type Σ Γ  e  (Type_Prod t₁ t₂) -> 
-      has_type Σ Γ  (E_Second e)  t₂ 
+      ∀ (Σ : sum_types_constructors) (Γ : context) 
+        (e : expr) (t₁ t₂ : type),
+      Σ / Γ |- e : {{ t₁ * t₂ }} -> 
+      Σ / Γ |- second e : t₂ 
 
   (* Records *)
-  | T_Record_Nil :
-      ∀ Γ Σ, 
-      has_type Σ Γ  (E_Record_Nil)  (Type_Record_Nil) 
-  | T_Record_Cons :
-      ∀ Γ Σ x e t_e e_tail t_tail, 
-      has_type Σ Γ  e  t_e ->  
-
-      has_type Σ Γ  e_tail  t_tail ->  
-      record_type t_tail ->
-      has_type Σ Γ  (E_Record_Cons x e e_tail)  (Type_Record_Cons x t_e t_tail)  
-  | T_Record_Access :
-      ∀ Γ Σ x e t_e t_acc, 
-      has_type Σ Γ  e  t_e ->  
-      lookup_type_record x t_e = Some t_acc ->
-      has_type Σ Γ  (E_Record_Access e x)  t_acc 
   
+  | T_Recordt :
+      ∀ (Σ : sum_types_constructors) (Γ : context) (rec : lsexpr) (tᵣ : lstype),
+      Σ / Γ |-ᵣ rec : tᵣ -> 
+      Σ / Γ |- { rec } : {{ { tᵣ } }}  
+
+  | T_Record_Access :
+      ∀ (Σ : sum_types_constructors) (Γ : context) 
+        (e : expr) (tᵣ : lstype) (x : string) (t : type),
+      Σ / Γ |- e : {{ { tᵣ } }} -> 
+      lookup_lstype x tᵣ = Some t ->
+      Σ / Γ |- e::x : t
+
+  (* Fixpoints *)
   | T_Fix :
-      ∀ Γ Σ e t, 
-      has_type Σ Γ  e (Type_Fun t t) ->  
-      has_type Σ Γ  (E_Fix e)  t 
+      ∀ (Σ : sum_types_constructors) (Γ : context) (e : expr) (t : type), 
+      Σ / Γ |- e : {{ t -> t }} ->  
+      Σ / Γ |- fix e : t 
 
   (* Sum types *)
-  | T_Unit : ∀ Γ Σ, has_type Σ Γ E_Unit (Type_Unit)  
+  | T_Unit : 
+      ∀ (Σ : sum_types_constructors) (Γ : context), 
+      Σ / Γ |- unit : {{ Unit }}
   | T_In_Left :
-      ∀ Γ Σ t₁ t₂ e, 
-      has_type Σ Γ  e  t₁ ->  
-      has_type Σ Γ  (E_In_Left t₁ t₂ e)  (Type_Disjoint_Union t₁ t₂) 
+      ∀ (Σ : sum_types_constructors) (Γ : context) (e: expr) (t₁ t₂ : type), 
+      Σ / Γ |-  e : t₁ ->  
+      Σ / Γ |-  inl <t₁ | t₂> e :  {{ t₁ + t₂ }} 
   | T_In_Right :
-      ∀ Γ Σ t₁ t₂ e, 
-      has_type Σ Γ  e  t₂ ->  
-      has_type Σ Γ  (E_In_Right t₁ t₂ e)  (Type_Disjoint_Union t₁ t₂) 
+      ∀ (Σ : sum_types_constructors) (Γ : context) (e: expr) (t₁ t₂ : type), 
+      Σ / Γ |-  e : t₂ ->  
+      Σ / Γ |-  inr <t₁ | t₂> e :  {{ t₁ + t₂ }}
   | T_Match :
-      ∀ Γ Σ t₁ t₂ tf e e_left e_right, 
-      has_type Σ Γ e (Type_Disjoint_Union t₁ t₂) ->  
-      has_type Σ Γ e_left  (Type_Fun t₁ tf) -> 
-      has_type Σ Γ e_right  (Type_Fun t₂ tf) -> 
-      has_type Σ Γ (E_Match e e_left e_right) tf 
-
+      ∀ (Σ : sum_types_constructors) (Γ : context) 
+        (t₁ t₂ tₑ : type) (e eₗ eᵣ : expr), 
+      Σ / Γ |- e : {{ t₁ + t₂ }} ->  
+      Σ / Γ |- eₗ : {{ t₁ -> tₑ }} -> 
+      Σ / Γ |- eᵣ : {{ t₂ -> tₑ }} -> 
+      Σ / Γ |- match e with | inl => eₗ | inr => eᵣ end : tₑ
+  
   | T_Sum_Constr: 
-      ∀ Γ Σ e constr name t,
+      ∀ (Σ : sum_types_constructors) (Γ : context) 
+        (e : expr) (constr name : string) (t : type),
       lookup_type_sum constr Σ = Some (name, t) -> 
-      has_type Σ Γ e t ->
-      has_type Σ Γ (E_Sum_Constr constr e) (Type_Sum name)
+      Σ / Γ |- e : t ->
+      Σ / Γ |- `E_Sum_Constr constr e` : (Type_Sum name)
 
   | T_Sum_Match : 
-    ∀ Σ Γ t e name_sum branches, 
-    has_type Σ Γ e (Type_Sum name_sum) -> 
-    has_type_lsexpr name_sum Σ Γ branches t ->
-    has_type Σ Γ (E_Sum_Match e branches) t
+    ∀ (Σ : sum_types_constructors) (Γ : context)
+      (t : type) (e default: expr) 
+      (name_sum : string) (branches : lsexpr), 
+    Σ / Γ |- e : (Type_Sum name_sum) -> 
+    Σ / Γ |- default : t -> 
+    Σ / Γ |-ₛ name_sum ~> branches : t ->
+    has_type Σ Γ (E_Sum_Match e default branches) t
+  where 
+    "Σ '/' Γ |- e : t" := (has_type Σ Γ e t)
+  with 
+    has_type_record : sum_types_constructors -> context -> lsexpr -> lstype -> Prop :=
+    | TRec_Nil :
+      ∀ (Σ : sum_types_constructors) (Γ : context),
+      Σ / Γ |-ᵣ nil : {{ Nil }}
+    | TRec_Cons :
+      ∀ (Σ : sum_types_constructors) (Γ : context)
+        (x: string) (e : expr) (rec : lsexpr) (t : type) (tᵣ : lstype) ,
+      Σ / Γ |-ᵣ rec : tᵣ -> 
+      Σ / Γ |- e : t -> 
+      Σ / Γ |-ᵣ x := e ; rec : {{ x : t ; tᵣ }}
+  where 
+    "Σ '/' Γ |-ᵣ e : t" := (has_type_record Σ Γ e t)
 
-  | T_Exception :
-      ∀ Σ Γ e t,
-      has_type Σ Γ (E_Exception e) t
-with has_type_lsexpr : string -> sum_types_constructors -> context -> lsexpr -> type -> Prop :=
-    | T_LSExpr_Nil :
-        ∀ 
-          (name_sum constr : string) 
+  with 
+    has_type_branches : string -> sum_types_constructors -> context -> lsexpr -> type -> Prop :=
+    | TB_Nil :
+      ∀ (name_sum : string) 
+        (Σ : sum_types_constructors) 
+        (Γ : context) 
+        (t t': type), 
+        Σ / Γ |-ₛ name_sum ~> nil : t
+
+    | TB_Cons :
+        ∀ (name_sum constr : string) 
           (Σ : sum_types_constructors) 
           (Γ : context) 
-          (t t': type), 
+          (e : expr)
+          (tail : lsexpr)
+          (t tₐ: type), 
+          Σ / Γ |-ₛ name_sum ~> tail : t -> 
+          lookup_type_sum constr Σ = Some (name_sum, tₐ) ->
+          Σ / Γ |- e : {{ tₐ -> t }} -> 
+          Σ / Γ |-ₛ name_sum ~> constr := e ; tail : t 
 
-        lookup_type_sum constr Σ = Some (name_sum, t') -> 
-        has_type_lsexpr name_sum Σ Γ LSE_Nil t
-        
-    | T_LSExpr_Cons :
-        ∀ name_sum Σ Γ tail constr e t_arg t, 
-        has_type_lsexpr name_sum Σ Γ tail t -> 
-        lookup_type_sum constr Σ = Some (name_sum, t_arg) -> 
-        has_type Σ Γ e {{ t_arg -> t }} -> 
-        has_type_lsexpr name_sum Σ Γ (LSE_Cons constr e tail)  t
+
+  where 
+    "Σ '/' Γ  |-ₛ name_sum ~> e : t" := (has_type_branches name_sum Σ Γ e t)
+  
+  
 .
 
 Hint Constructors has_type : local_hints.
-Hint Constructors has_type_lsexpr : local_hints.
-
-
+Hint Constructors has_type_record : local_hints.
+Hint Constructors has_type_branches : local_hints.
 
 
 
 Lemma weakening : 
-  ∀ e Γ Γ' Σ t ,
+  ∀ e Σ Γ Γ' t ,
         Maps.includedin Γ Γ' ->
-        has_type Σ Γ e t ->
-        has_type Σ Γ' e t.
+        Σ / Γ |- e : t ->
+        Σ / Γ'|- e : t.
 Proof with eauto with local_hints.
   pose (
     P (e : expr) :=
-      ∀ Γ Γ' Σ t ,
+      ∀ Σ Γ Γ' t ,
         Maps.includedin Γ Γ' ->
-        has_type Σ Γ e t ->
-        has_type Σ Γ' e t
+        Σ / Γ |- e : t ->
+        Σ / Γ'|- e : t
   ).
   pose (
     P0 (branches : lsexpr) :=
-      ∀ Γ Γ' Σ t name_sum,
+      ∀ Σ Γ Γ',
         Maps.includedin Γ Γ' ->
-        has_type_lsexpr name_sum Σ Γ branches t ->
-        has_type_lsexpr name_sum Σ Γ' branches t
+        (
+          ∀ name_sum t,
+          Σ / Γ |-ₛ name_sum ~> branches : t ->
+          Σ / Γ' |-ₛ name_sum ~> branches : t 
+        ) /\ 
+        (
+          ∀ t,
+          Σ / Γ |-ᵣ branches : t ->
+          Σ / Γ' |-ᵣ branches : t 
+        )
   ).
   
   intro e.
-  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; intros; try (try inversion H0; try inversion H1; try inversion H2; try inversion H3; subst; eauto with local_hints; fail).
-  - inversion H1; subst. eapply T_Fun.
-    apply H with (Γ := (x |-> t; Γ))... 
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0;
+  try (intros * IH1 * IH2 * IH3 * H_included H_type);
+  try (intros * IH1 * IH2 * H_included H_type);
+  try (intros * IH1 * IH2 * H_included; split; intros * H_type);
+  try (intros * IH1 *  H_included H_type);
+  try (intros * H_included H_type);
+  try (inversion H_type; eauto with local_hints; fail).
+  - inversion H_type; subst. eapply T_Fun.
+    apply IH1 with (Γ := (x |-> t; Γ))... 
     apply Maps.includedin_update...
-  - inversion H2; subst. eapply T_Let...   
-    apply H0 with (Γ := (x |-> t1; Γ))... 
+  - inversion H_type; subst. eapply T_Let...   
+    apply IH2 with (Γ := (x |-> t₁; Γ))... 
     apply Maps.includedin_update...
+  - inversion H_type; subst. 
+    apply IH1 with (Σ := Σ) in H_included as [_ H]...
+  - inversion H_type; subst. 
+    assert (H_i' := H_included).
+    apply IH3 with (Σ := Σ) in H_i' as [H _]...
+  - intros * H_included.
+    split...
+    intros t H_type.
+    inversion H_type...
+  - destruct (IH2 Σ _ _ H_included) as [H _].
+    inversion H_type... 
+  - destruct (IH2 Σ _ _ H_included) as [_ H].
+    inversion H_type...
 Qed.
+
 
 Hint Resolve weakening : local_hints.
 
@@ -262,5 +338,37 @@ Hint Resolve weakening_empty : local_hints.
 Hint Resolve weakening_eq : local_hints.
 
 
+Lemma lookup_has_type :
+  ∀ Σ Γ x lse e lst t,
+  Σ / Γ |-ᵣ lse : lst -> 
+  lookup_lsexpr x lse = Some e ->
+  lookup_lstype x lst = Some t -> 
+  Σ / Γ |- e : t.
+Proof with eauto with local_hints.
+  intros * H_type_ls.
+  induction H_type_ls.
+  - intros * H_lookup_e H_lookup_t. inversion H_lookup_e.
+  - intros * H_lookup_e H_lookup_t.
+    simpl in *.
+    destruct (String.eqb_spec x0 x); subst...
+    inversion H_lookup_e.
+    inversion H_lookup_t; subst...
+Qed.
 
 
+Lemma lookup_branches_type_fun :
+  ∀ Σ Γ name_sum constr branches t b tₐ,
+  (Σ) / Γ |-ₛ name_sum ~> branches : (t) -> 
+  lookup_lsexpr constr branches = Some b ->
+  lookup_type_sum constr Σ = Some (name_sum, tₐ) ->
+  Σ / Γ |- b : {{ tₐ -> t }}.
+Proof with eauto with local_hints.
+  intros * H_type_branches H_lookup_branches H_lookup_Σ.
+  induction H_type_branches.
+  - inversion H_lookup_branches.
+  - simpl in *.
+    destruct (String.eqb_spec constr0 constr); subst...
+    inversion H_lookup_branches; subst.
+    rewrite H in H_lookup_Σ.
+    inversion H_lookup_Σ; subst...
+Qed.

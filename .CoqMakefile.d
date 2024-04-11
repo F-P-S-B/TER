@@ -4,18 +4,12 @@ src/Canonical_form.vos src/Canonical_form.vok src/Canonical_form.required_vos: s
 src/Closed.vo src/Closed.glob src/Closed.v.beautified src/Closed.required_vo: src/Closed.v src/Hints.vo src/Syntax.vo src/Types.vo src/Maps.vo
 src/Closed.vio: src/Closed.v src/Hints.vio src/Syntax.vio src/Types.vio src/Maps.vio
 src/Closed.vos src/Closed.vok src/Closed.required_vos: src/Closed.v src/Hints.vos src/Syntax.vos src/Types.vos src/Maps.vos
-src/Eval.vo src/Eval.glob src/Eval.v.beautified src/Eval.required_vo: src/Eval.v 
-src/Eval.vio: src/Eval.v 
-src/Eval.vos src/Eval.vok src/Eval.required_vos: src/Eval.v 
 src/Hints.vo src/Hints.glob src/Hints.v.beautified src/Hints.required_vo: src/Hints.v 
 src/Hints.vio: src/Hints.v 
 src/Hints.vos src/Hints.vok src/Hints.required_vos: src/Hints.v 
 src/Maps.vo src/Maps.glob src/Maps.v.beautified src/Maps.required_vo: src/Maps.v src/Hints.vo
 src/Maps.vio: src/Maps.v src/Hints.vio
 src/Maps.vos src/Maps.vok src/Maps.required_vos: src/Maps.v src/Hints.vos
-src/Multi.vo src/Multi.glob src/Multi.v.beautified src/Multi.required_vo: src/Multi.v src/Syntax.vo src/Step.vo src/Subst.vo src/Hints.vo src/Closed.vo
-src/Multi.vio: src/Multi.v src/Syntax.vio src/Step.vio src/Subst.vio src/Hints.vio src/Closed.vio
-src/Multi.vos src/Multi.vok src/Multi.required_vos: src/Multi.v src/Syntax.vos src/Step.vos src/Subst.vos src/Hints.vos src/Closed.vos
 src/Preservation.vo src/Preservation.glob src/Preservation.v.beautified src/Preservation.required_vo: src/Preservation.v src/Hints.vo src/Syntax.vo src/Types.vo src/Subst.vo src/Step.vo src/Canonical_form.vo src/Maps.vo
 src/Preservation.vio: src/Preservation.v src/Hints.vio src/Syntax.vio src/Types.vio src/Subst.vio src/Step.vio src/Canonical_form.vio src/Maps.vio
 src/Preservation.vos src/Preservation.vok src/Preservation.required_vos: src/Preservation.v src/Hints.vos src/Syntax.vos src/Types.vos src/Subst.vos src/Step.vos src/Canonical_form.vos src/Maps.vos
@@ -28,12 +22,9 @@ src/Step.vos src/Step.vok src/Step.required_vos: src/Step.v src/Hints.vos src/Sy
 src/Subst.vo src/Subst.glob src/Subst.v.beautified src/Subst.required_vo: src/Subst.v src/Closed.vo src/Hints.vo src/Maps.vo src/Syntax.vo src/Types.vo
 src/Subst.vio: src/Subst.v src/Closed.vio src/Hints.vio src/Maps.vio src/Syntax.vio src/Types.vio
 src/Subst.vos src/Subst.vok src/Subst.required_vos: src/Subst.v src/Closed.vos src/Hints.vos src/Maps.vos src/Syntax.vos src/Types.vos
-src/Syntax.vo src/Syntax.glob src/Syntax.v.beautified src/Syntax.required_vo: src/Syntax.v src/Maps.vo src/Hints.vo
-src/Syntax.vio: src/Syntax.v src/Maps.vio src/Hints.vio
-src/Syntax.vos src/Syntax.vok src/Syntax.required_vos: src/Syntax.v src/Maps.vos src/Hints.vos
-src/Transformations/Pair_Records.vo src/Transformations/Pair_Records.glob src/Transformations/Pair_Records.v.beautified src/Transformations/Pair_Records.required_vo: src/Transformations/Pair_Records.v src/Maps.vo src/Syntax.vo src/Step.vo src/Subst.vo src/Hints.vo src/Closed.vo src/Types.vo
-src/Transformations/Pair_Records.vio: src/Transformations/Pair_Records.v src/Maps.vio src/Syntax.vio src/Step.vio src/Subst.vio src/Hints.vio src/Closed.vio src/Types.vio
-src/Transformations/Pair_Records.vos src/Transformations/Pair_Records.vok src/Transformations/Pair_Records.required_vos: src/Transformations/Pair_Records.v src/Maps.vos src/Syntax.vos src/Step.vos src/Subst.vos src/Hints.vos src/Closed.vos src/Types.vos
-src/Types.vo src/Types.glob src/Types.v.beautified src/Types.required_vo: src/Types.v src/Hints.vo src/Maps.vo src/Syntax.vo
-src/Types.vio: src/Types.v src/Hints.vio src/Maps.vio src/Syntax.vio
-src/Types.vos src/Types.vok src/Types.required_vos: src/Types.v src/Hints.vos src/Maps.vos src/Syntax.vos
+src/Syntax.vo src/Syntax.glob src/Syntax.v.beautified src/Syntax.required_vo: src/Syntax.v 
+src/Syntax.vio: src/Syntax.v 
+src/Syntax.vos src/Syntax.vok src/Syntax.required_vos: src/Syntax.v 
+src/Types.vo src/Types.glob src/Types.v.beautified src/Types.required_vo: src/Types.v src/Maps.vo src/Hints.vo src/Syntax.vo
+src/Types.vio: src/Types.v src/Maps.vio src/Hints.vio src/Syntax.vio
+src/Types.vos src/Types.vok src/Types.required_vos: src/Types.v src/Maps.vos src/Hints.vos src/Syntax.vos

@@ -2,35 +2,51 @@ From Coq Require Import Unicode.Utf8.
 From Coq Require Import Strings.String.
 Local Open Scope Z_scope.
 Require Import ZArith.
+Require Maps.
+Import Maps.Notations.
+Require Import Hints.
 
-(** TEST *)
-
-
-Inductive type : Set :=
+Inductive type :=
   (* Primitive types *)
-  | Type_Unit : type
-  | Type_Num : type
-  | Type_Bool : type
+  | Type_Unit
+  | Type_Num
+  | Type_Bool
 
   (* Functions *)
-  | Type_Fun (t₁ t₂ : type) : type
+  | Type_Fun (t₁ t₂ : type)
 
-  (* Product types *)
-  | Type_Prod (t₁ t₂ : type) : type
-  | Type_Recordt (l : lstype) : type
+  (* Product tyoes *)
+  | Type_Prod (t₁ t₂ : type)
+  | Type_Record_Nil
+  | Type_Record_Cons (x : string) (t₁ t₂ : type)
 
   (* Sum types *)
-  | Type_Disjoint_Union (t₁ t₂ : type) : type
-  | Type_Sum (name : string) : type
-with 
-  lstype :=
-    | LST_Nil : lstype
-    | LST_Cons (x : string) (t : type) (tail : lstype) : lstype
+  | Type_Disjoint_Union (t₁ t₂ : type)
+
+  | Type_Sum (name : string)
+
 .
 
 
 
-Inductive expr : Set := 
+Inductive record_type : type -> Prop :=
+  | RT_Nil : 
+      record_type Type_Record_Nil
+  | RT_Cons :
+      ∀ x t₁ t₂, 
+      record_type t₂ -> 
+      record_type (Type_Record_Cons x t₁ t₂)
+.
+
+Hint Constructors record_type : local_hints.
+
+
+Inductive exception :=
+  | Ex_Unhandled_Case
+.
+Hint Constructors exception : local_hints.
+
+Inductive expr := 
   (* Lambda calculus *)
   | E_Var (x : string) 
   | E_App (e1 e2 : expr) 
@@ -55,7 +71,8 @@ Inductive expr : Set :=
   | E_Second (e : expr) 
 
   (* Records *)
-  | E_Recorde (bindings : lsexpr)
+  | E_Record_Nil
+  | E_Record_Cons (x : string) (e tail : expr) 
   | E_Record_Access (e : expr) (x : string)
 
   (* Recursion *)
@@ -64,45 +81,93 @@ Inductive expr : Set :=
   (* Sum types *)
   | E_In_Left (t₁ t₂ : type) (e : expr)
   | E_In_Right (t₁ t₂ : type) (e : expr)
+
   | E_Match (e case_left case_right : expr)
 
   | E_Unit 
   | E_Sum_Constr (constr : string) (e : expr)
-  | E_Sum_Match (e default: expr) (branches : lsexpr)
 
+  | E_Sum_Match (e : expr) (branches : lsexpr)
+  (* 
+    Ajouter Exceptions:
+      - err: Unhandled branch
+    Pour typer:
+    - vérifier l'inclusion mais pas l'exhaustivité
+    Pour step:
+    - Si inclus: Comme Match inl/inr
+    - Si non inclus: exception Ex_Unhandled_Case
+    
+    Pour step les exception: faire 
+  *)
+
+  | E_Exception (e: exception)
   with 
-    lsexpr : Set :=
+    lsexpr :=
     | LSE_Nil : lsexpr
     | LSE_Cons : string -> expr -> lsexpr -> lsexpr
 .
 
+Fixpoint In_LSE (e: expr) (l: lsexpr) : Prop :=
+    match l with
+      | LSE_Nil => False
+      | LSE_Cons _ h t => h = e \/ In_LSE e t
+    end.
+
+(* Type branches, induction mutuelle, en déduire un meilleur principe de récurrence *)
 
 Check expr_ind.
+
+
 Scheme expr_mut_ind := Induction for expr Sort Prop
-  with expr_list_ind := Induction for lsexpr Sort Prop
-.
-Check expr_mut_ind.
+  with expr_list_ind := Induction for lsexpr Sort Prop.
+  Check expr_mut_ind.
+(* 
+  Pour généraliser: 
+  Element Constructeur, identifier avec numéro
+
+  Environnement lie numéro constructeur -> type constructeur
+
+  Découper proprement en 2 environnements
+
+  Environnement devient paire Environnement constructeurs, Environnement variables
 
 
+  Todo éventuellement:
+  Traduction avec Inl, Inr vers Type sum générique
+
+
+*)
 
 (* Record lookups *)
-Fixpoint lookup_lstype (x : string) (l: lstype) : option type :=
-  match l with 
-  | LST_Nil => None 
-  | LST_Cons name t tail =>
-      if (name =? x)%string 
-      then Some t 
-      else lookup_lstype x tail
+Fixpoint lookup_type_record (x : string) (t: type) :=
+  match t with 
+  | Type_Record_Cons y t t_tail =>
+    if String.eqb x y then Some t else lookup_type_record x t_tail
+  | _ => None 
   end.
 
-Fixpoint lookup_lsexpr (x : string) (l: lsexpr) : option expr :=
-  match l with 
-  | LSE_Nil => None 
-  | LSE_Cons name t tail =>
-      if (name =? x)%string 
-      then Some t 
-      else lookup_lsexpr x tail
+Fixpoint lookup_val_record (x : string) (e: expr) :=
+  match e with 
+  | E_Record_Cons y v tail =>
+    if String.eqb x y then Some v else lookup_val_record x tail
+  | _ => None 
   end.
+
+
+
+
+
+Local Lemma lookup_type_record_some_is_record : 
+  ∀ x t v, 
+  lookup_type_record x t = Some v -> 
+  ∃ y t₁ t₂, t = Type_Record_Cons y t₁ t₂.
+Proof.
+  intros.
+  induction t;
+  try (inversion H; fail).
+  eauto.
+Qed. 
+
 
 Inductive value : expr -> Prop :=
   | V_True : 
@@ -120,10 +185,14 @@ Inductive value : expr -> Prop :=
       value e2 -> 
       value (E_Pair e1 e2)
 
-  | V_Recordv :
-      ∀ fields,
-      value_lsexpr fields -> 
-      value (E_Recorde fields)
+  | V_Record_Nil : 
+      value (E_Record_Nil)
+
+  | V_Record_Cons :
+      ∀ x e tail,
+      value e -> 
+      value tail -> 
+      value (E_Record_Cons x e tail)
   
   | V_In_Left :
       ∀ e t₁ t₂, 
@@ -151,21 +220,15 @@ with value_lsexpr : lsexpr -> Prop :=
       value_lsexpr (LSE_Cons constr e branches)
 .
 
-Lemma lookup_lsexpr_value :
-  ∀ (branches : lsexpr) (constr : string) (b : expr),
-  value_lsexpr branches ->
-  lookup_lsexpr constr branches = Some b -> 
-  value b.
-Proof.
-  intros.
-  induction branches. 
-  - inversion H0.
-  - inversion H; subst.
-    simpl in *. destruct (String.eqb_spec s constr); subst; eauto.
-    inversion H0; subst.
-    assumption.
-Qed.
 
+Inductive blocking_expr : expr -> Prop := 
+  | BE_Exc : ∀ e : exception, blocking_expr (E_Exception e)
+  | BE_Val : ∀ e : expr, value e -> blocking_expr e
+.
+
+Inductive blocking_lsexpr : lsexpr -> Prop :=
+  | BLSE_Val : ∀ branches, value_lsexpr branches -> blocking_lsexpr branches
+  .
 
 Hint Constructors type : local_hints.
 Hint Constructors expr : local_hints.
@@ -173,19 +236,16 @@ Hint Constructors lsexpr : local_hints.
 Hint Constructors value : local_hints.
 Hint Constructors value_lsexpr : local_hints.
 
+(* TODO: revoir priorités *)
 Definition x := "x"%string.
 Definition y := "y"%string.
 Definition z := "z"%string.
 
 Declare Custom Entry expr_ty.
 
+Notation "'{{' e '}}'" := e (e custom expr_ty at level 99).
 
 
-Notation "'{{'  e  '}}'" := e (e custom expr_ty at level 99).
-
-
-Notation " '`' x '`' " := x (in custom expr_ty at level 0, x constr at level 0).
-Notation " '#' x " := x (in custom expr_ty at level 0, x constr at level 0).
 Notation "x" := x (in custom expr_ty at level 0, x constr at level 0).
 Notation "'Bool'" := Type_Bool (in custom expr_ty at level 0).
 Notation "'Int'" := Type_Num (in custom expr_ty at level 0).
@@ -196,37 +256,33 @@ Notation "t1 '*' t2" := (Type_Prod t1 t2) (in custom expr_ty at level 30, left a
 
 Notation "t1 '+' t2" := (Type_Disjoint_Union t1 t2) (in custom expr_ty at level 40, left associativity).
 
-Notation "'{'  t  '}'" := (Type_Recordt t) (in custom expr_ty at level 0, left associativity).
+
+Notation "'nil'" := (Type_Record_Nil) (in custom expr_ty).
+Notation " x ':' t1  '::' t2" := (Type_Record_Cons x t1 t2) (
+  in custom expr_ty at level 1,
+  left associativity).
 
 
-Notation "'Nil'" := 
-  (LST_Nil)
-  (in custom expr_ty at level 91).
-
-Notation "l : t1 ; t2" := 
-  (
-    LST_Cons l t1 t2 
-  ) (in custom expr_ty at level 98, right associativity).
-
-
-Check {{ { #x : Int; #y : Bool; Nil} }}.
+Check {{ Bool + x : Bool :: nil }}.
 
 
 Declare Custom Entry expr.
 
 
 
-(* Coercion E_Var : string >-> expr. *)
+Coercion E_Var : string >-> expr.
 
 
 
 
-Notation "<{ e }>" := e (e custom expr at level 99).
+Notation "<{ e }>" := e 
+  (
+    e custom expr at level 99
+  ).
 Notation "( e )" := e (in custom expr, e at level 99).
-Notation "{  e  }" := (E_Recorde e) (in custom expr, e at level 99).
+(* Notation "{ e }" := e (in custom expr, e at level 99). *)
 Notation " '`' x '`' " := x (in custom expr at level 0, x constr at level 0).
 Notation "x" := x (in custom expr at level 0, x constr at level 0).
-Notation " # x" := (E_Var x) (in custom expr at level 0, x constr at level 0).
 Notation "x y" := 
   (E_App x y) (in custom expr at level 1, left associativity).
 
@@ -295,18 +351,16 @@ Notation "'second' e" :=
   (in custom expr at level 91).
 
 Notation "'nil'" := 
-  (LSE_Nil)
+  (E_Record_Nil)
   (in custom expr at level 91).
-
-Notation "l := e1 ; e2" := 
-  (
-    LSE_Cons l e1 e2 
-  ) (in custom expr at level 98, right associativity,
-    format "l  ':='  e1  ';'  '/'  e2"
-  ).
 
 Notation "e '::' x" := (E_Record_Access e x)
   (in custom expr at level 90).
+
+Notation "l := e1 ; e2" := 
+  (
+    E_Record_Cons l e1 e2 
+  ) (in custom expr at level 98, right associativity).
 
 Notation "'fix' e" := 
   (E_Fix e)
@@ -317,70 +371,41 @@ Notation "'fix' e" :=
   )
   .
 
-Notation "'unit'" := E_Unit (in custom expr at level 90).
 
-Notation "'inl' '<' t₁ | t₂ '>' e" := 
-  (E_In_Left t₁ t₂ e) (
-    in custom expr at level 90,
-    t₁ custom expr_ty,
-    t₂ custom expr_ty,
-    e custom expr,
-   right associativity).
+Notation "'Inl' t₁ t₂ e" := 
+  (E_In_Left t₁ t₂ e)
+  (in custom expr at level 90, right associativity).
 
-Notation "'inr' '<' t₁ | t₂ '>' e" := 
-  (E_In_Right t₁ t₂ e) (
-    in custom expr at level 90,
-    t₁ custom expr_ty,
-    t₂ custom expr_ty,
-    e custom expr,
-   right associativity).
+Notation "'Inr' t₁ t₂ e" := 
+  (E_In_Right t₁ t₂ e)
+  (in custom expr at level 90, right associativity).
 
 
-Notation "'match' e 'with' '|' 'inl' '=>' e_left '|' 'inr' '=>' e_right 'end'" :=
+Notation "'match' e 'with' '|' 'Inl' '=>' e_left '|' 'Inr' '=>' e_right 'end'" :=
   (E_Match e e_left e_right)
   (
     in custom expr at level 90, 
     left associativity,
-    format "'[v' 'match'  e  'with'  '/' '|'  'inl'  '=>'  e_left '/' '|'  'inr'  '=>'  e_right '/' 'end' ']'"
+    format "'[v' 'match'  e  'with'  '/' '|'  'Inl'  '=>'  e_left '/' '|'  'Inr'  '=>'  e_right '/' 'end' ']'"
   )
   .
 
-Notation "'match_sum' e 'with' lst ':' default 'end_sum'" :=
-  (E_Sum_Match e default lst)
-  (
-    in custom expr at level 90, 
-    left associativity,
-    format "'[v' 'match_sum'  e  'with' '/' '[v'  lst ':' default  ']' '/' 'end_sum' ']'"
-
-  )
-  .
-Check <{match 2 with | inl => 3 | inr => 4  end}>.
-Check <{
-    match_sum 2 with 
-        `"Test"%string` := fun x : Bool => #x;
-        `"Test2"%string` := fun x : Bool => #x;
-        nil : true
-     end_sum
-}>.
-Unset Printing Notations.
+  Check <{match 2 with | Inl => 3 | Inr => 4  end}>.
+(* Unset Printing Notations. *)
 Set Printing Coercions.
 
-Check <{
-  {
-    x := 3; nil
-  }
-
-}>.
 
 Check <{
+  
 (fix
   let y = 4 in 
-  (fun x : Bool * Bool + Int ->  {#x : Unit; Nil}  => 
-  if #x 
-  then first (2 - 1, (#y == 3, 4))
+  (fun x : Type_Bool * Type_Bool + Type_Num ->  x : Type_Unit ::nil  => 
+  if x 
+  then first (2 - 1, (y == 3, 4))
   else
-     {y := 3; nil}::y) true)
-      (match 2 with | inl => 3 | inr => 4  end )
-      (match_sum 2 with `"Inl"%string` := 3 ; `"Inr"%string` := 4; nil : 4 end_sum )
+     (y := 3; nil)::y) true)
+      (match 2 with | Inl => 3 | Inr => 4  end )
 }>.
 
+
+Check expr_mut_ind.
