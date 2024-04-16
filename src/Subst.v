@@ -144,7 +144,7 @@ Inductive substitution  (s : expr) (x : string) : expr -> expr -> Prop :=
   | S_Sum_Constr :
       ∀ constr e e',
       substitution s x e e' ->
-      substitution s x (E_Sum_Constr constr e) (E_Sum_Constr constr e')
+      substitution s x <{constr[e]}> <{constr[e']}>
 
   | S_Sum_Match :
       ∀ (e e' default default' : expr) (branches branches' : lsexpr),

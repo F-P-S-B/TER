@@ -189,7 +189,7 @@ Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop :
         (e : expr) (constr name : string) (t : type),
       lookup_type_sum constr Σ = Some (name, t) -> 
       Σ / Γ |- e : t ->
-      Σ / Γ |- `E_Sum_Constr constr e` : (Type_Sum name)
+      Σ / Γ |- constr[e] : (Type_Sum name)
 
   | T_Sum_Match : 
     ∀ (Σ : sum_types_constructors) (Γ : context)
@@ -255,6 +255,10 @@ Lemma weakening :
         Σ / Γ |- e : t ->
         Σ / Γ'|- e : t.
 Proof with eauto with local_hints.
+assert (MapsIncluded: 
+    ∀ Γ Γ' x (t : type), 
+    Maps.includedin Γ Γ' -> Maps.includedin (x |-> t; Γ) (x |-> t; Γ')
+) by apply Maps.includedin_update.
   pose (
     P (e : expr) :=
       ∀ Σ Γ Γ' t ,
@@ -279,32 +283,26 @@ Proof with eauto with local_hints.
   ).
   
   intro e.
-  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0;
-  try (intros * IH1 * IH2 * IH3 * H_included H_type);
-  try (intros * IH1 * IH2 * H_included H_type);
-  try (intros * IH1 * IH2 * H_included; split; intros * H_type);
-  try (intros * IH1 *  H_included H_type);
-  try (intros * H_included H_type);
-  try (inversion H_type; eauto with local_hints; fail).
-  - inversion H_type; subst. eapply T_Fun.
-    apply IH1 with (Γ := (x |-> t; Γ))... 
-    apply Maps.includedin_update...
-  - inversion H_type; subst. eapply T_Let...   
-    apply IH2 with (Γ := (x |-> t₁; Γ))... 
-    apply Maps.includedin_update...
-  - inversion H_type; subst. 
-    apply IH1 with (Σ := Σ) in H_included as [_ H]...
-  - inversion H_type; subst. 
-    assert (H_i' := H_included).
-    apply IH3 with (Σ := Σ) in H_i' as [H _]...
-  - intros * H_included.
-    split...
-    intros t H_type.
-    inversion H_type...
-  - destruct (IH2 Σ _ _ H_included) as [H _].
-    inversion H_type... 
-  - destruct (IH2 Σ _ _ H_included) as [_ H].
-    inversion H_type...
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear e P P0; intros;
+  match goal with 
+  | [ |- _ /\ _ ] => split; intros
+  | _ => idtac
+  end;
+  match goal with 
+  | [ H_type : (_  / _ |- _ : _) |- _] =>
+      inversion H_type; subst; eauto with local_hints
+  | [ H_type : (_  / _ |-ₛ _ ~> _ : _) |- _] =>
+      inversion H_type; subst; eauto with local_hints
+  | [ H_type : (_  / _ |-ᵣ _ : _) |- _] =>
+      inversion H_type; subst; eauto with local_hints
+  | _ => idtac
+  end;
+  match goal with 
+  | [ IH : (∀ _ _ _, _ -> _ /\ _),
+      H_included : Maps.includedin _ _
+       |- _ ] => edestruct IH; eauto with local_hints
+  | _ => idtac
+  end.
 Qed.
 
 

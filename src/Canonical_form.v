@@ -7,15 +7,20 @@ Require Import ZArith.
 Require Maps.
 Import Maps.Notations.
 
+Local Ltac solve_canon := 
+    intros; 
+    match goal with 
+    | [ H_val : value _  , H_type : has_type _ _ _ _|- _] => 
+        inversion H_val; subst; inversion H_type; eauto 6
+    end.
+
 Local Lemma t_num : 
     ∀ Γ Σ e,
     has_type Σ Γ  e  Type_Num ->  
     value e ->
     ∃ (z : Z), e = <{z}>.
 Proof.
-    intros * H_type H_val.
-    inversion H_val; eauto; 
-    subst; inversion H_type.
+    solve_canon.
 Qed.
 
 Hint Resolve t_num : local_hints.
@@ -26,9 +31,7 @@ Local Lemma t_bool :
     value e ->
     e = <{true}> \/ e = <{false}>.
 Proof.
-    intros * H_type H_val.
-    inversion H_val; subst; auto;
-    inversion H_type.
+    solve_canon.
 Qed.
 
 Hint Resolve t_bool : local_hints.
@@ -39,10 +42,7 @@ Local Lemma t_fun :
     value e ->
     ∃ x e', e = <{fun x : t1 => e'}>. 
 Proof.
-    intros * H_type H_val.
-    inversion H_val; subst; try (inversion H_type; fail).
-    inversion H_type; subst.
-    eauto.
+    solve_canon.
 Qed.
 Hint Resolve t_fun : local_hints.
 
@@ -53,13 +53,10 @@ Local Lemma t_pair :
     value e ->
     ∃ e₁ e₂, e = <{(e₁, e₂)}>.
 Proof.
-    intros * H_type H_val.
-    inversion H_val; subst; try (inversion H_type; fail).
-    eauto.
+    solve_canon.
 Qed. 
 Hint Resolve t_pair : local_hints.
 
-(* TODO: Voir si on aura besoin de lemmes équivalents *)
 
 Local Lemma t_record :
     ∀ Σ Γ (t : lstype) (e : expr),
@@ -69,39 +66,8 @@ Local Lemma t_record :
         e = <{ {rec} }> 
     /\  Σ / Γ |-ᵣ rec : t.
 Proof.
-  intros * H_type H_val.
-  inversion H_val; subst; try (inversion H_type; fail).
-  inversion H_type; subst.
-  eauto.
+  solve_canon.
 Qed.
-
-(* Local Lemma t_record_nil :
-    ∀ Γ Σ e,
-    has_type Σ Γ  e  (Type_Record_Nil) ->  
-    value e ->
-    e = <{nil}>.
-Proof.
-    intros * H_type H_val.
-    inversion H_val; subst; try (inversion H_type; fail).
-    reflexivity.
-Qed. 
-
-Hint Resolve t_record_nil : local_hints. *)
-
-
-(* Local Lemma t_record_cons :
-    ∀ Γ Σ e x t_x t_tail,
-    has_type Σ Γ  e  (Type_Record_Cons x t_x t_tail) ->  
-    value e ->
-    ∃ e' e_tail, e = E_Record_Cons x e' e_tail.
-Proof.
-    intros * H_type H_val.
-    inversion H_type; subst; try (inversion H_val; fail).
-    eauto.
-Qed. 
-
-Hint Resolve t_record_cons : local_hints. *)
-
 
 Local Lemma record_type_lookup :
   ∀ Γ Σ e t_rec t x, 
@@ -142,15 +108,14 @@ Qed.
 Hint Resolve record_val_lookup : local_hints.
 
 
+
 Local Lemma t_in: 
     ∀ Γ Σ e t₁ t₂,
     has_type Σ Γ  e  (Type_Disjoint_Union t₁ t₂) ->  
     value e ->
     ∃ e', e = E_In_Left t₁ t₂ e' \/ e = E_In_Right t₁ t₂ e'.
 Proof.
-    intros * H_type H_val.
-    inversion H_val; subst; inversion H_type; subst;
-    eauto.
+    solve_canon.    
 Qed.
 Hint Resolve t_in : local_hints.
 
@@ -162,11 +127,9 @@ Local Lemma t_enum :
     ∃ constr e' t, 
        lookup_type_sum constr Σ = Some (name, t)
     /\ has_type Σ Γ e' t
-    /\ e = E_Sum_Constr constr e'.
+    /\ e = <{constr[e']}>.
 Proof.
-  intros * H_type H_val.
-  inversion H_val; subst; inversion H_type; subst. 
-  eauto 6.
+    solve_canon.
 Qed.
   
 

@@ -27,7 +27,7 @@ Fixpoint is_free_in (x : string) (e : expr) : Prop :=
   | <{first e}> | <{second e}> 
   | <{ e::_ }> | <{fix e}> 
   | <{ inl < _ | _> e }> | <{ inr < _ | _> e }> 
-  | E_Sum_Constr _ e => is_free_in x e
+  |  <{_[e]}> => is_free_in x e
   | <{ { lse } }> => is_free_in_lsexpr x lse
   | <{match_sum e with ls : default end_sum}> => 
     is_free_in x e \/ is_free_in x default \/ is_free_in_lsexpr x ls
@@ -351,7 +351,7 @@ Hint Resolve closed_record : local_hints.
 
 Lemma closed_access : 
   ∀ x e, 
-  closed (E_Record_Access e x) -> 
+  closed <{e :: x}> -> 
   closed e.
 Proof.
   intros.
@@ -421,7 +421,7 @@ Hint Resolve closed_match : local_hints.
 
 Lemma closed_sum_constr :
   ∀ constr e,
-  closed (E_Sum_Constr constr e) -> 
+  closed <{constr[e]}> -> 
   closed e.
 Proof.
   intros.

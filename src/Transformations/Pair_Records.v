@@ -32,7 +32,7 @@ Fixpoint is_pair_free (e : expr) : Prop :=
   | <{first _}> | <{second _}> => False
   | <{ e::_ }> | <{fix e}> 
   | <{ inl < _ | _> e }> | <{ inr < _ | _> e }> 
-  | E_Sum_Constr _ e => 
+  | <{_[e]}> => 
       is_pair_free e
   | <{ { lse } }> => is_pair_free_lsexpr lse
   | <{match_sum e with ls : default end_sum}> => 
@@ -104,7 +104,7 @@ Fixpoint to_pair_free (e : expr) : expr :=
         end 
       }> 
   | <{ unit }> => <{ unit }>
-  | E_Sum_Constr name e => E_Sum_Constr name (to_pair_free e)
+  | <{ name[e] }> => <{ name [ `to_pair_free e` ] }>
   | <{ match_sum e with branches : default end_sum }> =><{ 
         match_sum `to_pair_free e` with 
         `to_pair_free_lsexpr branches` 

@@ -55,8 +55,8 @@ Inductive expr : Set :=
   | E_Second (e : expr) 
 
   (* Records *)
-  | E_Recorde (bindings : lsexpr)
-  | E_Record_Access (e : expr) (x : string)
+  | E_Rec (bindings : lsexpr)
+  | E_Rec_Access (e : expr) (x : string)
 
   (* Recursion *)
   | E_Fix (e : expr)
@@ -120,10 +120,10 @@ Inductive value : expr -> Prop :=
       value e2 -> 
       value (E_Pair e1 e2)
 
-  | V_Recordv :
+  | V_Rec :
       ∀ fields,
       value_lsexpr fields -> 
-      value (E_Recorde fields)
+      value (E_Rec fields)
   
   | V_In_Left :
       ∀ e t₁ t₂, 
@@ -157,7 +157,7 @@ Lemma lookup_lsexpr_value :
   lookup_lsexpr constr branches = Some b -> 
   value b.
 Proof.
-  intros.
+  intros. 
   induction branches. 
   - inversion H0.
   - inversion H; subst.
@@ -223,7 +223,7 @@ Declare Custom Entry expr.
 
 Notation "<{ e }>" := e (e custom expr at level 99).
 Notation "( e )" := e (in custom expr, e at level 99).
-Notation "{  e  }" := (E_Recorde e) (in custom expr, e at level 99).
+Notation "{  e  }" := (E_Rec e) (in custom expr, e at level 99).
 Notation " '`' x '`' " := x (in custom expr at level 0, x constr at level 0).
 Notation "x" := x (in custom expr at level 0, x constr at level 0).
 Notation " # x" := (E_Var x) (in custom expr at level 0, x constr at level 0).
@@ -305,7 +305,7 @@ Notation "l := e1 ; e2" :=
     format "l  ':='  e1  ';'  '/'  e2"
   ).
 
-Notation "e '::' x" := (E_Record_Access e x)
+Notation "e '::' x" := (E_Rec_Access e x)
   (in custom expr at level 90).
 
 Notation "'fix' e" := 
@@ -315,6 +315,7 @@ Notation "'fix' e" :=
     right associativity,
     format "'[v ' 'fix'  e ']'" 
   )
+  
   .
 
 Notation "'unit'" := E_Unit (in custom expr at level 90).
@@ -344,6 +345,12 @@ Notation "'match' e 'with' '|' 'inl' '=>' e_left '|' 'inr' '=>' e_right 'end'" :
     format "'[v' 'match'  e  'with'  '/' '|'  'inl'  '=>'  e_left '/' '|'  'inr'  '=>'  e_right '/' 'end' ']'"
   )
   .
+
+Notation " constr '[' e ']'" := (E_Sum_Constr constr e) 
+  (
+    in custom expr at level 0,
+    e custom expr at level 99
+  ).
 
 Notation "'match_sum' e 'with' lst ':' default 'end_sum'" :=
   (E_Sum_Match e default lst)
@@ -381,6 +388,6 @@ Check <{
   else
      {y := 3; nil}::y) true)
       (match 2 with | inl => 3 | inr => 4  end )
-      (match_sum 2 with `"Inl"%string` := 3 ; `"Inr"%string` := 4; nil : 4 end_sum )
+      (match_sum x[1 - 2] with `"Inl"%string` := 3 ; `"Inr"%string` := 4; nil : 4 end_sum )
 }>.
 

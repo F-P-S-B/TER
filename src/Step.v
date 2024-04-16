@@ -204,7 +204,7 @@ Inductive step : expr -> expr -> Prop :=
   | ST_Sum_Constr :
       ∀ (constr : string) (e e' : expr),
       e --> e' -> 
-      E_Sum_Constr constr e --> E_Sum_Constr constr e'
+      <{constr[e]}> --> <{constr[e']}>
 
   | ST_Sum_Match_Main : 
       ∀ (e e' default : expr) (branches : lsexpr), 
@@ -233,7 +233,7 @@ Inductive step : expr -> expr -> Prop :=
       value_lsexpr branches ->
       value default -> 
       lookup_lsexpr constr branches = Some b ->
-      <{match_sum `E_Sum_Constr constr v` with branches : default end_sum }> 
+      <{match_sum constr[v] with branches : default end_sum }> 
       --> <{b v}>
   | ST_Sum_Match_Apply_Not_Found :
       ∀ (constr : string) (v default: expr) (branches : lsexpr), 
@@ -241,7 +241,7 @@ Inductive step : expr -> expr -> Prop :=
       value_lsexpr branches ->
       value default -> 
       lookup_lsexpr constr branches = None ->
-      <{match_sum `E_Sum_Constr constr v` with branches : default end_sum }> 
+      <{match_sum constr[v] with branches : default end_sum }> 
       --> default
 where
   "x --> y" := (step x y)
@@ -261,8 +261,6 @@ where
     "x -->ₗ y" := (step_lsexpr x y)
 .
 
-Check ∀ (z₁ z₂ : Z),
-      <{ z₁ - z₂ }> --> <{ `z₁ - z₂` }>.
 
 Hint Constructors step : local_hints.
 Hint Constructors step_lsexpr : local_hints.

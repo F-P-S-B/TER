@@ -10,6 +10,7 @@ Inductive map {A} :=
   | empty
   | update (m : map) (key : string) (val : A) 
 .
+Hint Constructors map : local_hints.
 
 
 Fixpoint find {A} (m : map) (key : string) : option A :=
@@ -21,6 +22,7 @@ Fixpoint find {A} (m : map) (key : string) : option A :=
       else find m key
   end.
 
+Hint Unfold find : local_hints.
 
 Module Notations.
 (** We introduce a similar notation for partial maps: *)
@@ -38,6 +40,8 @@ End Notations.
 Import Notations.
 
 Definition eq {A} (m1 m2 : @map A) : Prop := ∀ x, m1 ? x = m2 ? x. 
+
+Hint Unfold eq : local_hints.
 
 
 (* Axiom Maps_extensionnality :
@@ -80,6 +84,8 @@ Proof.
   auto.
 Qed.
 
+Hint Resolve apply_empty : local_hints.
+
 Lemma update_eq : 
   ∀ (A : Type) (m : map) (x: string) (v: A),
   (x |-> v; m) ? x = Some v.
@@ -90,7 +96,7 @@ Proof.
   reflexivity.
 Qed.
 
-
+Hint Resolve update_eq : local_hints.
 
 
 Theorem update_neq : 
@@ -104,7 +110,7 @@ Proof.
   reflexivity.
 Qed.
 
-
+Hint Resolve update_neq : local_hints.
 
 
 Lemma update_shadow : ∀ (A : Type) (m : map) (x : string) (v1 v2 : A),
@@ -113,6 +119,7 @@ Proof.
   intros A m x v1 v2. intro y. simpl.
   destruct (String.eqb_spec x y); reflexivity.
 Qed.
+Hint Resolve update_shadow : local_hints.
 
 
 
@@ -126,6 +133,7 @@ Proof.
   destruct (String.eqb_spec x y); subst; reflexivity.
 Qed.
 
+Hint Resolve update_same : local_hints.
 
 
 
@@ -143,6 +151,7 @@ Proof.
   exfalso. apply H. reflexivity.
 Qed.
 
+Hint Resolve update_permute : local_hints.
 
 
 
@@ -150,6 +159,7 @@ Definition includedin {A : Type} (m m' : map) :=
   ∀ (x : string) (v : A), 
   m ? x = Some v -> m' ? x = Some v.
 
+Hint Unfold includedin : local_hints.
 
 
 
@@ -169,6 +179,7 @@ Proof with auto.
     rewrite update_neq...
 Qed.
 
+Hint Resolve includedin_update : local_hints.
 
 
 Lemma includedin_refl : 
@@ -180,6 +191,7 @@ Proof.
   - apply includedin_update. assumption.
 Qed.
 
+Hint Resolve includedin_refl : local_hints.
 
 Lemma includedin_eq : 
   ∀ (A : Type) m₁ m₂, eq m₁ m₂ -> @includedin A m₁ m₂.
@@ -189,6 +201,7 @@ Proof.
   unfold includedin.
   intros. rewrite <- H. assumption. 
 Qed.
+Hint Resolve includedin_eq : local_hints.
 
 
 
