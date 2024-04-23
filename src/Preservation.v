@@ -43,64 +43,48 @@ Proof with eauto 3 with local_hints.
         ) 
   ).
   apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
-  clear P P0;
+  clear e P P0;
   try (
-    try (intros * IH1 * IH2 * IH3 * H_type H_step);
-    try (intros * IH1 * IH2 * H_type H_step);
-    try (intros * IH1 * H_type H_step);
-    try (intros * H_type H_step);
-    inversion H_step; subst;
-    inversion H_type; subst; eauto 3 with local_hints; fail
+    intros;
+    match goal with 
+    | [ H_step : _ -->ₗ _
+        |- _] => 
+          inversion H_step
+    | [ H_type : has_type _ _ _ _,
+        H_step : _ --> _
+        |- _] => 
+        inversion H_step; subst; 
+          inversion H_type; subst;
+          eauto 3 with local_hints;
+          match goal with 
+          | [ H : has_type _ _ <{ inr < _ | _ > _ }> _ |- _ ] => inversion H 
+          | [ H : has_type _ _ <{ inl < _ | _ > _ }> _ |- _ ] => inversion H 
+          | [ H : has_type _ _ _ _ |- _ ] => inversion H 
+          | _ => idtac
+          end; subst; eauto 3 with local_hints
+    end; fail
   ).
 
-  - intros * IH1 * IH2 * H_type H_step.
-    inversion H_step; subst;
-    inversion H_type; subst...
-    inversion H7...
-
   - intros * IH1 * H_type H_step.
     inversion H_step; subst;
     inversion H_type; subst...
-    inversion H4...
+    edestruct IH1...
 
-  - intros * IH1 * H_type H_step.
-    inversion H_step; subst;
-    inversion H_type; subst...
-    inversion H4...
-
-  - intros * IH1 * H_type H_step.
-    inversion H_step; subst;
-    inversion H_type; subst...
-    apply IH1 with (Σ := Σ) in H0 as [_ H]...
-
-  - intros * IH1 * H_type H_step. 
-    inversion H_step; subst;
-    inversion H_type; subst...
-    inversion H5...
-
-  - intros * IH1 * H_type H_step.
-    inversion H_step; subst;
-    inversion H_type; subst...
-    inversion H3; subst...
 
   - intros * IH1 * IH2 * IH3 * H_type H_step.
     inversion H_step; subst;
     inversion H_type; subst;
-    try inversion H7; subst...
+    eauto 3 with local_hints;
+    try (edestruct IH3; eauto 3 with local_hints; fail).
+    match goal with 
+    | [ H_t : has_type _ _ (E_Sum_Constr _ _) _ |- _] => 
+        inversion H_t; subst; eauto 3 with local_hints
+    end.
 
-  - intros * IH1 * IH2 * IH3 * H_type H_step.
-    inversion H_step; subst;
-    inversion H_type; subst...
-    + eapply IH3 in H4 as [H _]...
-    + inversion H8; subst... 
-
-  - intros * H_step. inversion H_step.
   
   - intros * IH1 * IH2 * H_step. split; intros * H_type;
     inversion H_step; subst;
-    inversion H_type; subst...
-    + eapply TB_Cons...
-      eapply IH2 in H4 as [H _]...
-    + eapply TRec_Cons...
-      eapply IH2 in H4 as [_ H]...
+    inversion H_type; subst; 
+    eauto with local_hints;
+    edestruct IH2...
 Qed.

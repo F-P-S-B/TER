@@ -79,7 +79,7 @@ Proof with eauto with local_hints.
   ).
 
   intro e.
-  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0;
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear e P P0;
   try (intros * IH1 * IH2 * IH3 * H_free H_type);
   try (intros * IH1 * IH2 * H_free H_type);
   try (intros * IH1 * IH2 * H_free; split; intros * H_type);
@@ -151,7 +151,7 @@ Proof with eauto with local_hints.
   ).
   intro e.
   apply expr_mut_ind with (P := P) (P0 := P0);
-  unfold P; unfold P0; clear P P0;
+  unfold P; unfold P0; clear e P P0;
   try (
     intros * IH1 * IH2 * H_type x_contra H_contra;
     inversion H_contra; inversion H_type; subst;
@@ -176,11 +176,6 @@ Proof with eauto with local_hints.
     eapply IH1; eauto with local_hints;
     fail
   )...
-  (* try (intros * IH1 * IH2 * IH3 * H_type);
-  try (intros * IH1 * IH2 * H_type);
-  try (intros * IH1 * IH2 *; split; intros * H_type);
-  try (intros * IH1 * H_type);
-  try (intros * H_type). *)
   - intros * H_type x_contra H_contra. inversion H_type; subst. inversion H2.
   - intros * IH1 * H_type x_contra H_contra.
     eapply free_has_type in H_contra as [t_x H_eq]...
@@ -191,7 +186,7 @@ Proof with eauto with local_hints.
     + eapply free_has_type in H_contra as [t_x H_eq]...
       inversion H_eq.
   - intros * IH1 * IH2 * IH3 * H_type x_contra H_contra.
-    inversion H_contra; inversion H_type; subst.
+    inversion H_contra; inversion H_type; subst...
     + eapply IH1... 
     + inversion H.
       * eapply IH2... 
@@ -210,20 +205,19 @@ Qed.
 
 Hint Resolve typed_empty : local_hints.
 
-
+Ltac closed_inv :=
+  intros * H;
+  unfold closed in *;
+  repeat split; 
+    intros x_contra H_contra;
+    apply H with x_contra;
+    eauto with local_hints.
 
 Lemma closed_app : 
   ∀ e₁ e₂, 
   closed (E_App e₁ e₂) -> 
   closed e₁ /\ closed e₂.
-Proof.
-  intros.
-  unfold closed in *.
-  split; 
-    intros x H_contra;
-    apply H with x;
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 
 Hint Resolve closed_app : local_hints.
 
@@ -233,13 +227,7 @@ Lemma closed_let :
   ∀ x e₁ e₂, 
   closed (E_Let x e₁ e₂) -> 
   closed e₁.
-Proof.
-  intros.
-  unfold closed in *.
-  intros x' H_contra.
-  apply H with x'.
-  eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 
 Hint Resolve closed_let : local_hints.
 
@@ -248,14 +236,7 @@ Lemma closed_if :
   ∀ e₁ e₂ e₃, 
   closed (E_If e₁ e₂ e₃) -> 
   closed e₁ /\ closed e₂ /\ closed e₃.
-Proof.
-  intros.
-  unfold closed in *.
-  repeat split;
-    intros x H_contra;
-    apply H with x;
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 
 Hint Resolve closed_if : local_hints.
 
@@ -264,14 +245,7 @@ Lemma closed_minus :
   ∀ e₁ e₂, 
   closed (E_Minus e₁ e₂) -> 
   closed e₁ /\ closed e₂.
-Proof.
-  intros.
-  unfold closed in *.
-  split; 
-    intros x H_contra;
-    apply H with x;
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 
 Hint Resolve closed_minus : local_hints.
 
@@ -279,14 +253,7 @@ Lemma closed_eq :
   ∀ e₁ e₂, 
   closed (E_Eq e₁ e₂) -> 
   closed e₁ /\ closed e₂.
-Proof.
-  intros.
-  unfold closed in *.
-  split; 
-    intros x H_contra;
-    apply H with x;
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 
 Hint Resolve closed_eq : local_hints.
 
@@ -294,14 +261,7 @@ Lemma closed_pair :
   ∀ e₁ e₂, 
   closed (E_Pair e₁ e₂) -> 
   closed e₁ /\ closed e₂.
-Proof.
-  intros.
-  unfold closed in *.
-  split; 
-    intros x H_contra;
-    apply H with x;
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 
 Hint Resolve closed_pair : local_hints.
 
@@ -309,13 +269,7 @@ Lemma closed_first :
   ∀ e, 
   closed (E_First e) -> 
   closed e.
-Proof.
-  intros.
-  unfold closed in *.
-  intros x' H_contra;
-  apply H with x';
-  eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_first : local_hints.
 
 
@@ -324,13 +278,7 @@ Lemma closed_second :
   ∀ e, 
   closed (E_Second e) -> 
   closed e.
-Proof.
-  intros.
-  unfold closed in *.
-  intros x' H_contra;
-  apply H with x';
-  eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_second : local_hints.
 
 
@@ -338,14 +286,7 @@ Lemma closed_record :
   ∀ x e tail, 
   closed_lsexpr (LSE_Cons x e tail) -> 
   closed e /\ closed_lsexpr tail.
-Proof.
-  intros.
-  unfold closed in *.
-  split; 
-    intros x' H_contra;
-    apply H with x';
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_record : local_hints.
 
 
@@ -353,13 +294,7 @@ Lemma closed_access :
   ∀ x e, 
   closed <{e :: x}> -> 
   closed e.
-Proof.
-  intros.
-  unfold closed in *.
-  intros x' H_contra;
-  apply H with x';
-  eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_access : local_hints.
 
 
@@ -367,13 +302,7 @@ Lemma closed_fix :
   ∀ e, 
   closed (E_Fix e) -> 
   closed e.
-Proof.
-  intros.
-  unfold closed in *.
-  intros x' H_contra;
-  apply H with x';
-  eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_fix : local_hints.
 
 
@@ -381,26 +310,14 @@ Lemma closed_in_left :
   ∀ e t₁ t₂,
   closed (E_In_Left t₁ t₂ e) ->  
   closed e.
-Proof.
-  intros.
-  unfold closed in *.
-  intros x' H_contra;
-  apply H with x';
-  eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_in_left : local_hints.
 
 Lemma closed_in_right :
   ∀ e t₁ t₂,
   closed (E_In_Right t₁ t₂ e) ->  
   closed e.
-Proof.
-  intros.
-  unfold closed in *.
-  intros x' H_contra;
-  apply H with x';
-  eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_in_right : local_hints.
 
 
@@ -409,39 +326,20 @@ Lemma closed_match :
   ∀ e e_left e_right,
   closed (E_Match e e_left e_right) -> 
   closed e /\ closed e_left /\ closed e_right.
-Proof.
-  intros.
-  unfold closed in *.
-  repeat split;
-    intros x' H_contra;
-    apply H with x';
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_match : local_hints.
 
 Lemma closed_sum_constr :
   ∀ constr e,
   closed <{constr[e]}> -> 
   closed e.
-Proof.
-  intros.
-  unfold closed in *.
-    intros x' H_contra;
-    apply H with x';
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
 Hint Resolve closed_sum_constr : local_hints.
 
 Lemma closed_sum_match : 
   ∀ e default branches, 
   closed (E_Sum_Match e default branches) -> 
   closed e /\ closed default /\ closed_lsexpr branches.
-Proof.
-  intros.
-  unfold closed in *.
-  unfold closed_lsexpr in *.
-  repeat split;
-    intros x H_contra;
-    apply H with x;
-    eauto with local_hints.
-Qed.
+Proof ltac:(closed_inv).
+
+Hint Resolve closed_sum_match : local_hints.

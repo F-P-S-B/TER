@@ -37,7 +37,7 @@ Proof with eauto with local_hints.
       ) 
   ).
   apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
-  clear P P0...
+  clear e P P0...
 
   - intros * H_type. inversion H_type; subst. inversion H2.
 

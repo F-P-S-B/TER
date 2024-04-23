@@ -142,7 +142,7 @@ Proof.
     P0 (l : lsexpr) :=
       is_pair_free_lsexpr (to_pair_free_lsexpr l)
   ).
-  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0;
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear e P P0;
   intros; simpl in *; eauto with local_hints.
 Qed.
 
@@ -166,7 +166,7 @@ Proof with eauto with local_hints.
       is_free_in_lsexpr xf (to_pair_free_lsexpr l) -> 
       is_free_in_lsexpr xf l
   ).
-  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0; simpl in *;
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear e P P0; simpl in *;
   try (intros * IH1 * IH2 * IH3 * [H_free | [H_free | H_free]]);
   try (intros * IH1 * IH2 * IH3 * H_free);
   try (intros * IH1 * IH2 * [H_free | H_free]);
@@ -188,7 +188,7 @@ Proof with eauto 6 with local_hints.
   intro e.
   pose (P (e : expr) := value e -> value (to_pair_free e)).
   pose (P0 (l : lsexpr) := value_lsexpr l -> value_lsexpr (to_pair_free_lsexpr l));
-  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0; simpl in *;
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear e P P0; simpl in *;
   try (intros * IH1 * IH2 * IH3 * H_val);
   try (intros * IH1 * IH2 * H_val);
   try (intros * IH1 * H_val);
@@ -226,7 +226,7 @@ Proof with eauto with local_hints.
   ).
   
   apply expr_mut_ind with (P := P) (P0 := P0);
-  unfold P; unfold P0; clear P P0; simpl in *;
+  unfold P; unfold P0; clear e P P0; simpl in *;
   try (intros * IH1 * IH2 * IH3 * H_closed x_contra H_contra);
   try (intros * IH1 * IH2 * H_closed x_contra H_contra);
   try (intros * IH1 * H_closed x_contra H_contra);
@@ -269,7 +269,7 @@ Proof with eauto with local_hints.
   ).
   
   apply expr_mut_ind with (P := P) (P0 := P0);
-  unfold P; unfold P0; clear P P0; simpl in *;
+  unfold P; unfold P0; clear e P P0; simpl in *;
   try (intros * IH1 * IH2 * IH3 * H_subst);
   try (intros * IH1 * IH2 * H_subst);
   try (intros * IH1 * H_subst);
@@ -328,7 +328,7 @@ Proof with eauto with local_hints.
       to_pair_free_lsexpr l -->ₗ to_pair_free_lsexpr l'
   ).
   apply expr_mut_ind with (P := P) (P0 := P0);
-  unfold P; unfold P0; clear P P0; simpl in *;
+  unfold P; unfold P0; clear e P P0; simpl in *;
   try (intros * IH1 * IH2 * IH3 * H_step);
   try (intros * IH1 * IH2 * H_step);
   try (intros * IH1 * H_step);
@@ -468,7 +468,7 @@ Proof with eauto 4 with local_hints.
       )      
   ).
   apply expr_mut_ind with (P := P) (P0 := P0);
-  unfold P; unfold P0; clear P P0; simpl in *;
+  unfold P; unfold P0; clear e P P0; simpl in *;
   try (intros * IH1 * IH2 * IH3 * H_type);
   try (intros * IH1 * IH2 * H_type);
   try (intros * IH1 * IH2 *; split; intros * H_type);

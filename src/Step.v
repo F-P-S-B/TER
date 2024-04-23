@@ -284,24 +284,7 @@ Proof with eauto with local_hints.
       ¬ branches -->ₗ branches'
   ).
   apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
-  clear P P0;
-  try (
-    intros * IH1 * IH2 * IH3 * H_val H_contra;
-    inversion H_val;
-    inversion H_contra; subst;
-    try (eapply IH1; eauto with local_hints; fail);
-    try (eapply IH2; eauto with local_hints; fail);
-    try (eapply IH3; eauto with local_hints; fail);
-    fail
-  );
-  try (
-    intros * IH1 * IH2 * H_val H_contra;
-    inversion H_val;
-    inversion H_contra; subst;
-    try (eapply IH1; eauto with local_hints; fail);
-    try (eapply IH2; eauto with local_hints; fail);
-    fail
-  );
+  clear e P P0;
   try (
     intros * IH * H_val H_contra;
     inversion H_val;
@@ -309,11 +292,47 @@ Proof with eauto with local_hints.
     try (eapply IH; eauto with local_hints; fail);
     fail
   );
-  try (
-    intros * H_val H_contra;
-    inversion H_contra;
-    fail
-  ).
+   intros; intro H_contra;
+  repeat (match goal with 
+  | [ H_contra : _ --> _ |- _] => solve [inversion H_contra]
+  | [ H_contra : _ -->ₗ _ |- _] => solve [inversion H_contra]
+  | [ H_val : value _ , 
+      H_contra : _ --> _,
+      IH1 : ∀ _, _ -> ¬ _,
+      IH2 : ∀ _, _ -> ¬ _,
+      IH3 : ∀ _, _ -> ¬ _
+      |- _ ] => 
+        inversion H_val;
+        inversion H_contra; subst;
+        try (eapply IH1; eauto with local_hints; fail);
+        try (eapply IH2; eauto with local_hints; fail);
+        try (eapply IH3; eauto with local_hints; fail)
+  | [ H_val : value _ , 
+      H_contra : _ --> _,
+      IH1 : ∀ _, _ -> ¬ _,
+      IH2 : ∀ _, _ -> ¬ _
+      |- _ ] => 
+        inversion H_val;
+        inversion H_contra; subst;
+        try (eapply IH1; eauto with local_hints; fail);
+        try (eapply IH2; eauto with local_hints; fail);
+        fail
+  | [ H_val : value _ , 
+      H_contra : _ --> _, 
+      IH1 : ∀ _, _ -> ¬ _
+      |- _ ] => 
+        inversion H_val;
+        inversion H_contra; subst;
+        try (eapply IH1; eauto with local_hints);
+        fail
+  | [ H_val : value_lsexpr _ , 
+      H_contra : _ -->ₗ _, 
+      IH1 : ∀ _, _ -> ¬ _
+      |- _ ] => 
+        inversion H_val;
+        inversion H_contra; subst;
+        try (eapply IH1; eauto with local_hints; fail)
+  end).
 Qed.
 Hint Resolve not_value : local_hints.
 
@@ -330,6 +349,55 @@ Proof with eauto with local_hints.
     + eapply not_value...
     + eapply IHvalue_lsexpr...
 Qed.
+
+Local Ltac not_value_contra := 
+    match goal with 
+      | [ H_val : value ?thise, 
+          H_st : ?thise --> _ 
+          |- _ ] => 
+          exfalso; eapply not_value with (e:=thise); eauto with local_hints
+      | [ H_val : value_lsexpr ?thisb, 
+          H_st : ?thisb -->ₗ _ 
+          |- _ ] => 
+          exfalso; eapply not_value_lsexpr with (branches:=thisb); eauto with local_hints
+      end.
+
+Local Ltac det_subst :=
+  match goal with 
+      | [ _: substitution _ _ _ _,
+          _: substitution _ _ _ _
+          |- _ = _] => 
+            eapply Subst.deterministic; eauto with local_hints
+  end.
+
+Local Ltac by_constr := f_equal; eauto with local_hints; fail.
+
+Local Ltac impossible_red := 
+  match goal with
+      | [ H_st :  _ --> _
+          |- _ ] => inversion H_st; fail
+      end.
+
+Local Ltac handle_lookup :=
+  repeat (match goal with 
+    | [ H : lookup_lsexpr _ _ = Some _ 
+        |- _] =>
+          rewrite H in *
+    | [ H : Some _ = Some _
+        |- _ ] =>  
+        inversion H;
+        subst; eauto with local_hints
+    | [ H : Some _ = None |- _] => inversion H
+    | [ H : None = Some _ |- _] => inversion H
+    end); fail.
+
+Ltac my_auto := 
+  try by_constr; 
+  try det_subst;
+  try impossible_red; 
+  try not_value_contra;
+  try handle_lookup
+.
 
 Local Theorem deterministic :
     ∀ e e'₁ e'₂, 
@@ -353,182 +421,86 @@ Proof with eauto with local_hints.
       branches1' = branches2' 
   ).
   apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
-  clear P P0;
+  clear e P P0; 
   try (
-    intros * H_st1 H_st2;
-    inversion H_st1;
-    inversion H_st2;
-    fail
-  );
+    intros;
+  match goal with 
+  | [ H_st1 : _ --> _ ,
+      H_st2 : _ --> _ 
+      |- _] => inversion H_st1; inversion H_st2; fail
+  | [ H_st1 : _ -->ₗ _ ,
+      H_st2 : _ -->ₗ _ 
+      |- _] => inversion H_st1; inversion H_st2; fail
+  | [ H_st1 : _ --> _ ,
+      H_st2 : _ --> _ ,
+      IH : ∀ _ _, _ -> _ -> _
+      |- _] =>
+    inversion H_st1; subst; inversion H_st2; subst; my_auto; contradiction; fail
+  end);
   try (
-    intros * IH * H_st1 H_st2;
-    inversion H_st1;
-    inversion H_st2;
-    try (f_equal; eauto with local_hints; fail);
-    try (exfalso; eapply not_value; eauto with local_hints; fail);
-    try (inversion H2; fail);
-    try (inversion H3; fail);
+    intros * IH1 * IH2 * IH3 * H_st1 H_st2;
+    inversion H_st1; subst;
+    inversion H_st2; subst;
+    my_auto;
     fail
   );
   try (
     intros * IH1 * IH2 * H_st1 H_st2;
     inversion H_st1; subst;
     inversion H_st2; subst;
-    try (eapply Subst.deterministic; eauto with local_hints; fail);
-    try (f_equal; eauto with local_hints; fail);
-    try (exfalso; eapply not_value; eauto with local_hints; fail);
+    my_auto;
+    contradiction;
     fail
   ).
-  - intros * IH1 * IH2 * H_st1 H_st2.
-    inversion H_st1; subst.
-    + inversion H_st2; subst...
-      * eapply Subst.deterministic...
-      * inversion H4.
-      * exfalso; eapply not_value with (e:=e2)...
-    + inversion H_st1; subst; 
-      try (
-        inversion H_st2; subst;try (simpl in *; eauto with local_hints; fail); 
-        try (inversion H0; fail);
-        f_equal; eauto with local_hints;
-        try (exfalso; eapply not_value; eauto with local_hints; fail);
-        fail
-      ).
-      inversion H2.
-    + inversion H_st2; subst;
-      try (exfalso; eapply not_value; eauto with local_hints; fail).
-      f_equal...
-  - intros * IH1 * IH2 * IH3 * H_st1 H_st2.
-    inversion H_st1; subst; 
-    try (
-      inversion H_st2; subst; eauto with local_hints; 
-      try (inversion H3; fail); 
-      f_equal; eauto with local_hints; fail
-    ).
-  - intros * IH1 * IH2 * H_st1 H_st2.
-    inversion H_st1; subst.
-    + inversion H_st2; subst.
-      * f_equal...
-      * exfalso; eapply not_value...
-      * inversion H2.
-    + inversion H_st2; subst.
-      * exfalso; eapply not_value...
-      * f_equal...
-      * inversion H3.
-    + inversion H_st2; subst...
-      * inversion H2.
-      * inversion H3.
-  - intros * IH1 * IH2 * H_st1 H_st2.
-    inversion H_st1; subst.
-    + inversion H_st2; subst.
-      * f_equal...
-      * exfalso; eapply not_value...
-      * inversion H2.
-      * inversion H2.
-    + inversion H_st2; subst.
-      * exfalso; eapply not_value...
-      * f_equal...
-      * inversion H3.
-      * inversion H3.
-    + inversion H_st2; subst...
-      * inversion H2.
-      * inversion H3.
-      * contradiction.
-    + inversion H_st2; subst...
-      * inversion H3.
-      * inversion H4.
-      * contradiction.
   - intros * IH * H_st1 H_st2.
     inversion H_st1; subst;
     inversion H_st2; subst;
-    try (f_equal; eauto with local_hints).
-    + inversion H0; subst.
-      * exfalso; eapply not_value with (e:=e'₂)...
-      * exfalso; eapply not_value with (e:=v₂)...
-    + inversion H2; subst.
-      * exfalso; eapply not_value with (e:=e'₁)...
-      * exfalso; eapply not_value with (e:=v₂)... 
+    try by_constr;
+    match goal with 
+    | [ H : <{ (_, _) }>  --> _ |- _] => inversion H; not_value_contra
+    end.
   - intros * IH * H_st1 H_st2.
     inversion H_st1; subst;
     inversion H_st2; subst;
-    try (f_equal; eauto with local_hints).
-    + inversion H0; subst.
-      * exfalso; eapply not_value with (e:=v₁)...
-      * exfalso; eapply not_value with (e:=e'₂)...
-    + inversion H2; subst.
-      * exfalso; eapply not_value with (e:=v₁)...
-      * exfalso; eapply not_value with (e:=e'₁)... 
+    try by_constr;
+    match goal with 
+    | [ H : <{ (_, _) }>  --> _ |- _] => inversion H; not_value_contra
+    end.
   - intros * IH * H_st1 H_st2.
     inversion H_st1;
-    inversion H_st2; subst.
-    + f_equal... 
-    + exfalso; eapply not_value with (e:=<{ { e2 } }>)...
-    + exfalso; eapply not_value with (e:=<{ { e1 } }>)... 
-    + inversion H4. rewrite H0 in *. rewrite H3 in H8. inversion H8...  
-  - intros * IH * H_st1 H_st2.
-    inversion H_st1; subst;
     inversion H_st2; subst;
-    try (f_equal; eauto with local_hints).
-    + inversion H0.
-    + inversion H1.
-    + eapply Subst.deterministic... 
+    match goal with 
+    | [ H_st : <{ { _ } }> --> _,
+        H_val : value_lsexpr _
+        |- _] => 
+        inversion H_st;
+        not_value_contra
+    | [ H_eq : <{ { _ } }> = <{ { _ } }>
+        |- _] =>
+          inversion H_eq;
+          subst
+    | _ => idtac
+    end;
+    my_auto.
   - intros * IH1 * IH2 * IH3 * H_st1 H_st2.
-    inversion H_st1; subst.
-    + inversion H_st2; subst.
-      * f_equal...  
-      * exfalso; eapply not_value...
-      * exfalso; eapply not_value with (e:= e0)...
-      * inversion H3; subst. 
-        exfalso; eapply not_value with (e:= v)...
-      * inversion H3; subst. 
-        exfalso; eapply not_value with (e:= v)...
-    + inversion H_st2; subst.
-      * exfalso; eapply not_value...
-      * f_equal...
-      * exfalso; eapply not_value...
-      * exfalso; eapply not_value with (e:=case_left)...
-      * exfalso; eapply not_value with (e:=case_left)...
-    + inversion H_st2; subst.
-      * exfalso; eapply not_value with (e := e0)...
-      * exfalso; eapply not_value with (e := case_left)...
-      * f_equal...
-      * exfalso; eapply not_value...
-      * exfalso; eapply not_value...
-    + inversion H_st2; subst...
-      * inversion H6; subst. 
-        exfalso; eapply not_value with (e := v)...
-      * exfalso; eapply not_value with (e := case_left)...
-      * exfalso; eapply not_value with (e := case_right)...
-        
-    + inversion H_st2; subst...
-      * inversion H6; subst. 
-        exfalso; eapply not_value with (e := v)...
-      * exfalso; eapply not_value with (e := case_left)...
-      * exfalso; eapply not_value with (e := case_right)...
+    inversion H_st1; subst;
+    inversion H_st2; subst; my_auto;
+    match goal with 
+    | [ H : <{ inl < _ | _ > _ }> --> _ 
+        |- _] => 
+          inversion H
+    | [ H : <{ inr < _ | _ > _ }> --> _ 
+        |- _] => 
+          inversion H
+    end;
+    not_value_contra.
   - intros * IH1 * IH2 * IH3 * H_st1 H_st2.
-    inversion H_st1; subst.
-    + inversion H_st2; subst; try (f_equal; eauto with local_hints; fail);
-      try (exfalso; eapply not_value; eauto with local_hints; fail);
-      try (
-          inversion H3; 
-          exfalso; eapply not_value with (e := v); eauto with local_hints).
-    + inversion H_st2; subst; try (f_equal; eauto with local_hints; fail);
-      try (exfalso; eapply not_value; eauto with local_hints; fail);
-      try (exfalso; eapply not_value_lsexpr; eauto with local_hints; fail).
-    + inversion H_st2; subst; try (f_equal; eauto with local_hints; fail);
-      try (exfalso; eapply not_value; eauto with local_hints; fail);
-      try (exfalso; eapply not_value_lsexpr; eauto with local_hints; fail).
-    + inversion H_st2; subst.
-      * inversion H7; subst.
-        exfalso; eapply not_value with (e:=v)...
-      * inversion H7; subst.
-        exfalso; eapply not_value_lsexpr...
-      * exfalso; eapply not_value with (e:=default)...
-      * rewrite H6 in H11. inversion H11. f_equal...
-      * rewrite H6 in H11. inversion H11. 
-    + inversion H_st2; subst; try (f_equal; eauto with local_hints; fail);
-      try (exfalso; eapply not_value_lsexpr; eauto with local_hints; fail).
-      * inversion H7; subst.
-        exfalso; eapply not_value with(e:=v)...
-      * exfalso; eapply not_value with (e:=e'₁)...
-      * rewrite H6 in H11; inversion H11.
+    inversion H_st1; subst;
+    inversion H_st2; subst; 
+    my_auto;
+    match goal with 
+    | [ H : E_Sum_Constr _ _ --> _ 
+        |- _] => 
+          inversion H; not_value_contra
+    end.
 Qed.

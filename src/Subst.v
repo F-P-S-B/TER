@@ -182,14 +182,12 @@ Proof with eauto with local_hints.
       ∃ branches', substitution_lsexpr s x branches branches'
   ).
   apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P; clear P0; intros;
-  try (
-    try destruct H0; 
-    try destruct H1; 
-    try destruct H2;
-    try destruct (String.eqb_spec x x0); subst; 
-    eauto with local_hints; 
-    fail
-  ).
+  repeat (
+    match goal with 
+    | [ H : ∃ _, _ |- _] => destruct H
+    end
+  );
+  try destruct (String.eqb_spec x x0); subst... 
 Qed.
 
 
@@ -215,7 +213,7 @@ Proof.
         branches'₁ = branches'₂
   ).
 
-  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear P P0;
+  apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0; clear e P P0;
   try (
     intros * H_s_1 H_s_2; inversion H_s_1; inversion H_s_2; subst;
     eauto with local_hints;
@@ -289,7 +287,7 @@ Proof with eauto with local_hints.
   ).
 
   apply expr_mut_ind with (P := P) (P0 := P0); unfold P; unfold P0;
-  clear P P0.
+  clear e P P0.
   24 : {
     intros * IH1 * IH2 * H_type_s H_subst.
     split;
@@ -344,7 +342,7 @@ Proof with eauto with local_hints.
       apply Types.weakening_eq with (Γ₁ := (x |-> t; x |-> tₛ; Γ))...
       apply Maps.update_shadow.
     + apply T_Fun.
-      assert (has_type Σ (x0 |-> tₛ; x |-> t; Γ) e0 t₂) 
+      assert (has_type Σ (x0 |-> tₛ; x |-> t; Γ) e t₂) 
       by (
         apply Types.weakening_eq with (x |-> t; x0 |-> tₛ; Γ);
         try apply Maps.update_permute; eauto with local_hints
