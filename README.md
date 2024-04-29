@@ -1,2 +1,4 @@
 # Formalisation d'un système de type simple
 Ce projet a été fait dans le cadre d'un TER (Travail Encadré de Recherche) encadré par [Thibaut Balabonski](www.lri.fr/~blsk). Il consiste en la définition d'un langage basé sur le λ-calcul simplement typé (dans [src/Syntax.v](src/Syntax.v)), auquel s'ajoute un système de type (défini dans [src/Types.v](src/Types.v)), et de sémantique d'évaluation à petits pas (défini dans [src/Step.v](src/Step.v)), ce qui permet d'énoncer des propriétés intéressantes telles que le [progrès](src/Progress.v) et la [préservation du typage](src/Preservation.v). Le dossier [to_rewrite](to_rewrite) contient la première version des fichiers, qui ont été réécrit pour avoir un code plus propre. Deux fichiers n'ont pas été réécrits car les résultats qu'ils contiennent ne sont pas particulièrement intéressants en l'état.
+
+Pour compiler le projet, lancer la commande `make -f CoqMakefile` à la racine.
