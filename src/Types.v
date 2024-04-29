@@ -39,46 +39,37 @@ Fixpoint lookup_type_sum (constr : string) (Σ : sum_types_constructors)
     end.
 
 
-(* Declare Custom Entry map. *)
-(* Notation "'[[' j ']]'" := j (j custom map at level 99). *)
-(* Notation "x" := x (in custom map at level 99, x constr). *)
 Reserved Notation "Σ '/'  Γ  '|-'  e  ':'  t" (
-    (* in custom type_jugement at level 0, *)
     at level 0,
-    (* Γ custom map, *)
     e custom expr
 ). 
 
 Reserved Notation "Σ '/'  Γ  '|-ᵣ'  e  ':'  t" (
-    (* in custom type_jugement at level 0, *)
     at level 0,
-    (* Γ custom map, *)
     e custom expr
 ). 
 
 
 Reserved Notation "Σ '/' Γ  |-ₛ name_sum ~> e : t" (
-    (* in custom type_jugement at level 0, *)
     at level 0,
-    (* Γ custom map, *)
     e custom expr
 ). 
 
 
 Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop := 
-    (* Base λ-calculus *)
-    | T_Var : 
+  (* Base λ-calculus *)
+  | T_Var : 
       ∀ (Γ : context) (Σ : sum_types_constructors) (x : string) (t : type), 
       Γ ? x = Some t -> 
       Σ / Γ |- #x : t
 
-    | T_Fun : 
+  | T_Fun : 
       ∀ (Σ : sum_types_constructors) (Γ : context) 
         (x : string) (e : expr) (t₁ t₂ : type),
-      Σ / (x |-> t₁ ; Γ) |- <{e}> : t₂ -> 
+      Σ / (x |-> t₁ ; Γ) |- e : t₂ -> 
       Σ / Γ |- fun x : t₁ => e : {{ t₁ -> t₂ }}
-    
-    | T_App :
+  
+  | T_App :
       ∀ (Σ : sum_types_constructors) (Γ : context)  
         (e₁ e₂ : expr) (t₁ t₂ : type), 
       Σ / Γ |- e₂ : t₁ ->  
@@ -192,36 +183,36 @@ Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop :
       Σ / Γ |- constr[e] : (Type_Sum name)
 
   | T_Sum_Match : 
-    ∀ (Σ : sum_types_constructors) (Γ : context)
-      (t : type) (e default: expr) 
-      (name_sum : string) (branches : lsexpr), 
-    Σ / Γ |- e : (Type_Sum name_sum) -> 
-    Σ / Γ |- default : t -> 
-    Σ / Γ |-ₛ name_sum ~> branches : t ->
-    has_type Σ Γ (E_Sum_Match e default branches) t
+      ∀ (Σ : sum_types_constructors) (Γ : context)
+        (t : type) (e default: expr) 
+        (name_sum : string) (branches : lsexpr), 
+      Σ / Γ |- e : (Type_Sum name_sum) -> 
+      Σ / Γ |- default : t -> 
+      Σ / Γ |-ₛ name_sum ~> branches : t ->
+      Σ / Γ |- <{match_sum e with branches : default end_sum}> : t
   where 
     "Σ '/' Γ |- e : t" := (has_type Σ Γ e t)
   with 
     has_type_record : sum_types_constructors -> context -> lsexpr -> lstype -> Prop :=
     | TRec_Nil :
-      ∀ (Σ : sum_types_constructors) (Γ : context),
-      Σ / Γ |-ᵣ nil : {{ Nil }}
+        ∀ (Σ : sum_types_constructors) (Γ : context),
+        Σ / Γ |-ᵣ nil : {{ Nil }}
     | TRec_Cons :
-      ∀ (Σ : sum_types_constructors) (Γ : context)
-        (x: string) (e : expr) (rec : lsexpr) (t : type) (tᵣ : lstype) ,
-      Σ / Γ |-ᵣ rec : tᵣ -> 
-      Σ / Γ |- e : t -> 
-      Σ / Γ |-ᵣ x := e ; rec : {{ x : t ; tᵣ }}
+        ∀ (Σ : sum_types_constructors) (Γ : context)
+          (x: string) (e : expr) (rec : lsexpr) (t : type) (tᵣ : lstype) ,
+        Σ / Γ |-ᵣ rec : tᵣ -> 
+        Σ / Γ |- e : t -> 
+        Σ / Γ |-ᵣ x := e ; rec : {{ x : t ; tᵣ }}
   where 
     "Σ '/' Γ |-ᵣ e : t" := (has_type_record Σ Γ e t)
 
   with 
     has_type_branches : string -> sum_types_constructors -> context -> lsexpr -> type -> Prop :=
     | TB_Nil :
-      ∀ (name_sum : string) 
-        (Σ : sum_types_constructors) 
-        (Γ : context) 
-        (t t': type), 
+        ∀ (name_sum : string) 
+          (Σ : sum_types_constructors) 
+          (Γ : context) 
+          (t t': type), 
         Σ / Γ |-ₛ name_sum ~> nil : t
 
     | TB_Cons :
@@ -231,16 +222,14 @@ Inductive has_type : sum_types_constructors -> context -> expr -> type -> Prop :
           (e : expr)
           (tail : lsexpr)
           (t tₐ: type), 
-          Σ / Γ |-ₛ name_sum ~> tail : t -> 
-          lookup_type_sum constr Σ = Some (name_sum, tₐ) ->
-          Σ / Γ |- e : {{ tₐ -> t }} -> 
-          Σ / Γ |-ₛ name_sum ~> constr := e ; tail : t 
+        Σ / Γ |-ₛ name_sum ~> tail : t -> 
+        lookup_type_sum constr Σ = Some (name_sum, tₐ) ->
+        Σ / Γ |- e : {{ tₐ -> t }} -> 
+        Σ / Γ |-ₛ name_sum ~> constr := e ; tail : t 
 
 
   where 
     "Σ '/' Γ  |-ₛ name_sum ~> e : t" := (has_type_branches name_sum Σ Γ e t)
-  
-  
 .
 
 Hint Constructors has_type : local_hints.
@@ -249,7 +238,7 @@ Hint Constructors has_type_branches : local_hints.
 
 
 
-Lemma weakening : 
+Theorem weakening : 
   ∀ e Σ Γ Γ' t ,
         Maps.includedin Γ Γ' ->
         Σ / Γ |- e : t ->
@@ -310,7 +299,7 @@ Hint Resolve weakening : local_hints.
 
 
 
-Lemma weakening_empty : ∀ Γ Σ e t, 
+Corollary weakening_empty : ∀ Γ Σ e t, 
   has_type Σ empty e t -> 
   has_type Σ Γ e t. 
 Proof.
@@ -320,7 +309,7 @@ Proof.
 Qed.
 
 
-Lemma weakening_eq :
+Corollary weakening_eq :
   ∀ Γ₁ Γ₂ Σ e t, 
   Maps.eq Γ₁ Γ₂ -> 
   has_type Σ Γ₁  e  t -> 

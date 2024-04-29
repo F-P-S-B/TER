@@ -17,9 +17,9 @@ Hint Resolve lookup_branches_type_fun : local_hints.
 
 Theorem preservation : 
   ∀ e Σ e' t,
-  has_type Σ empty e t  ->
+  Σ / empty |- e : t  ->
   e --> e'  ->
-  has_type Σ empty e' t.
+  Σ / empty |- e' : t.
 Proof with eauto 3 with local_hints.
   intro e.
   pose (

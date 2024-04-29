@@ -16,7 +16,6 @@ Import ListNotations.
 
 
 
-(* TODO: voir si on repasse à une propriété inductive pour l'hypothèse s clos qui est nécessaire *)
 Inductive substitution  (s : expr) (x : string) : expr -> expr -> Prop := 
   | S_Var_Eq :
       substitution s x <{ #x }> s

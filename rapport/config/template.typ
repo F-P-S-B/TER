@@ -73,6 +73,8 @@
     angle: 45deg, length: 80%
   )
 
+  #import "@preview/quick-maths:0.1.0": shorthands
+  #show: shorthands.with(($|-$, $tack.r$))
 
   #outline()
   #pagebreak()
